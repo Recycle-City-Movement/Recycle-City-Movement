@@ -2,7 +2,7 @@ Thank you for comming! We've made it this far. Let's keep it going.</b>
 
 **How To Be A RCM Volunteer?**</b>
 
-Website designers and programmers are needed. The website code is in need of reviews, fixs, improvements, and code.</b>
+Website designers and programmers are needed. The website code is in need of reviews, fixes, improvements, and code.</b>
 
 Legal expertise and/or insight is needed. The business plans and charters need to be reviewed and constructively critiqued, for possible legal issues, and any other concerns. Future legal issues need to be brought to light, so they may be addressed.</b>
 
@@ -10,7 +10,7 @@ Editors with knowledge of the English language are needed to review the charters
 
 Planners and experienced developers are needed to raise issues for the website designers and legal experts.</b>
 
-Finance experts are needed to help design a business finance model that can work with three financial officers. How can bank transactions be processed where three people sign-off on a transaction?
+Finance experts are needed to help design a business finance model that can work with three financial officers. How can bank transactions be processed where three people sign-off on, that is to say approve, a transaction?
 
 Everyone is needed to share the call for RCM volunteers.
 
