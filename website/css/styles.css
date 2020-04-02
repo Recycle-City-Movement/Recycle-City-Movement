@@ -88,3 +88,7 @@ iframe[seamless] {
   background-color: #d5cfe6;
   color: #111111;
 }
+
+.text-shadow {
+  text-shadow: 1px 0px 24px #333;
+}
