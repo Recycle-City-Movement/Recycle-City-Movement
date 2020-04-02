@@ -1,0 +1,95 @@
+<!--
+    This is the website's welcome page, its root page.
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html lang="en-US">
+  <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <title>RCM Development Pain</title>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="stylesheet" href="./css/styles.css" />
+      <base href="." target="_blank" />
+    </head>
+
+    <body>
+      <div class="header">
+        <img
+          src="img/RCM-symbol/RCM-symbol.png"
+          alt="The RCM Logo"
+          style="float:left; width:100px; height:80px; padding-right:20px"
+        />
+        <h1>
+          Recycle City Movement
+        </h1>
+      </div>
+
+      <div>
+        <ul class="nav">
+          <li>
+            <a href="business/biz.html" target="main-content">
+              Business
+            </a>
+          </li>
+
+          <li>
+            <a href="members/members.html" target="main-content">
+              Members
+            </a>
+          </li>
+
+          <li>
+            <a href="proposals/proposals.html" target="main-content">
+              Proposals
+            </a>
+          </li>
+
+          <li>
+            <a href="community/community.html" target="main-content">
+              Community
+            </a>
+          </li>
+
+          <li>
+            <a href="forum/forum.html" target="main-content">
+              Forum
+            </a>
+          </li>
+
+          <li>
+            <a href="technology/tech.html" target="main-content">
+              Technology
+            </a>
+          </li>
+
+          <li>
+            <a href="links/links.html" target="main-content">
+              Links
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <iframe
+        src="welcome.html"
+        name="main-content"
+        id="main-iframe"
+        scrolling="no"
+        frameborder="0"
+        height="300px"
+        width="100%"
+       </iframe>
+
+      <script>
+        // Select the iframe element:
+        var iframe = document.getElementById("main-iframe");
+        
+        // Adjust the iframe height during onload event:
+        iframe.onload = function(){
+          iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+        }
+        </script>
+    </body>
+  </html>
+</html>
