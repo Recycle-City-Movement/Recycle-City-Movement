@@ -40,13 +40,6 @@ h4 {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.header {
-  background: #807060;
-  color: #113344;
-  padding: 25px;
-  text-shadow: 1px 0px 2px #eeeeee;
-}
-
 iframe {
   overflow: hidden;
   display: block;
@@ -75,7 +68,7 @@ iframe {
 
 .nav {
   list-style-type: none;
-  background-color: #e6d2cf;
+  background-color: transparent;
   text-align: center;
 }
 
@@ -105,6 +98,33 @@ iframe {
 }
 
 .text-shadow {
-  text-shadow: 0px 0px 26px #3e3e3e;
-  color: #000000
+  text-shadow: -1px 10px 12px #555555;
+  color: #000000;
+}
+
+.flex-container {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-pack: center;
+  justify-content: center;
+  background-color: transparent;
+}
+
+.flex-container > div {
+  background-color: transparent;
+  margin-left: 75px;
+  text-align: center;
+}
+
+.flex-container > nav {
+  background-color: transparent;
+  margin-left: 75px;
+  text-align: right;
+}
+
+img {
+  width: 100px;
+  height: 100px;
+  -webkit-filter: drop-shadow(-1px 10px 6px #555555);
+  filter: drop-shadow(-1px 10px 6px #555555);
 }

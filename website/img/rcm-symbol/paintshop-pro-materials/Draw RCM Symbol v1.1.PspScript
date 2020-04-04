@@ -1,0 +1,509 @@
+from PSPApp import *
+
+# Constants:
+program_title = "Draw RCM Symbol v1"
+
+BLK = 0, 0, 0
+E = None
+EYE = u"eye"
+FORCE = u"force"
+TAIL = u"tail"
+WHOLE = u"whole"
+
+WT = 255, 255, 255
+
+"""
+This script creates an RCM Symbol. The symbol is saved with
+a transparency enabled PNG type file.
+
+This script requires Corel's PaintShop Pro v5+.
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    """ Returns the script properties which are mostly used by PSP to
+    determine the script version. 'Host Version' 15.00 is PSP X5. """
+    return {
+        'Author': "Charles Bartley",
+        'Copyright': "Copyleft GNU General Public License.",
+        'Description': "This script creates a customized yin-yang symbol.",
+        'Host': "PaintShop Pro",
+        'Host Version': "15.00"}
+
+
+def convert_to_wireframe():
+    """ Transforms the Yin-Yang symbol into a wire-frame. """
+    # Define the wires:
+    App.Do(E, 'FindEdges')
+
+    # Expand the wires:
+    for _ in range(5):
+        App.Do(E, 'Erode')
+
+    for _ in range(3):
+        # Convert to black and white for masking white areas:
+        App.Do(E, 'ColorAdjustBrightnessContrast', {
+            'BrightnessContrast': {
+                'Brightness': -100,
+                'Contrast': 100,
+                'ContrastNew': False,
+                'UseLinearBC': True},
+            'GeneralSettings': {
+                'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    n = "Wire-frame"
+    do_sl(0)
+    App.Do(E, 'LayerDuplicate')
+    make_selection(App.Constants.CreateMaskFrom.Luminance)
+
+    App.Do(E, 'SelectNone', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'NegativeImage', {
+            'GeneralSettings': {
+                'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SoftenMore', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SelectFromMask', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SelectLayer', {'Path': (1, 0, [], 1)})
+
+    App.Do(E, 'LayerMergeGroup', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'DeleteLayer', {
+        'Path': None, 
+        'MergeMask': True, 
+        'WorkingMode': 1, 
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SelectInvert', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'ClearSelection', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SelectNone', {
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def do_alert(a):
+    """ Returns None or the answer to a query.
+    'a' describes the Fill target. """
+    return App.Do(E, 'MsgBox', {
+        'Buttons': 0,
+        'Icon': 1,
+        'Text':
+            "In the following dialog, please "
+            "choose a material to apply to the " + a + "."})
+
+
+def do_color_fill(color):
+    """
+    Fills a raster layer with a solid grey-type color.
+
+    color : integer
+        Is used by the three color components, RGB,
+        to define the fill color (color, color, color).
+    """
+    # Fill the layer with a solid color:
+    App.Do(E, 'Fill', {
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'MatchMode': App.Constants.MatchMode.None,
+            'Material': {
+                'Color': (color, color, color),
+                'Pattern': None,
+                'Gradient': None,
+                'Texture': None,
+                'Art': None},
+
+            'UseForeground': True,
+            'Opacity': 100,
+            'Point': (.5, .5),
+            'SampleMerged': False,
+            'Tolerance': 200,
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def do_fill(a):
+    """ Apply user's material choice.
+    'a' is material to apply (0..1), (background, foreground). """
+    App.Do(E, 'Fill', {
+        'BlendMode': App.Constants.BlendMode.Normal,
+        'MatchMode': App.Constants.MatchMode.None,
+        'UseForeground': a,
+        'Opacity': 100,
+        'Point': (1.5, 1.5),
+        'SampleMerged': 0,
+        'Tolerance': 200,
+        'Material': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Identity': "Material"}})
+
+
+def do_flip(t):
+    """ Either flips the image horizontally or vertically depending on 't'."""
+    App.Do(E, t, {
+        t + ' All Layers': 0,
+        'Working Mode': 1,
+        'TransformLocally': 1})
+
+
+def draw_circle(c, r, p):
+    """ Draws a circle. 'c' is the color of the circle.
+    'r' is the x and y radius. 'p' is the center point. """
+    App.Do(E, 'CreateEllipseObject', {
+        'Antialias': 1,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': 1,
+        'LineWidth': 0,
+        'Stroke': {},
+        'ObjectName': u"",
+        'RadiusX': r,
+        'RadiusY': r,
+        'CenterX': p[0],
+        'CenterY': p[1],
+        'Matrix': [],
+        'Visibility': 1,
+        'Fill': {
+            'Color': c,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None}})
+
+
+def do_sl(a):
+    """ Selects a layer on the same level by offset 'a', an integer. """
+    App.Do(E, 'SelectLayer', {'Path': (0, a, [], 1)})
+
+
+def get_mat(a):
+    """ Get material prepares the 'Identity' key's material.
+    'a' is the material source (0..1), (background, foreground). """
+    return App.Do(E, 'GetMaterial', {
+        'IsPrimary': a, 'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Interactive}})
+
+
+def hide_layer():
+    App.Do(E, 'LayerSetVisibility', {'Command': 1, 'Path': None, 'WorkingMode': 0})
+
+
+def isolate_sel(n, i=0):
+    """
+    - Loads a Selection named, 'n'.
+    - Clears everything but the Selection.
+    - 'i' is a flag. If it is true, the inverted Selection is isolated."""
+    load_sel(n)
+
+    if i:
+        App.Do(E, 'ClearSelection')
+        load_sel(WHOLE)
+        App.Do(E, 'SelectInvert')
+        App.Do(E, 'ClearSelection')
+
+    else:
+        App.Do(E, 'SelectInvert')
+        App.Do(E, 'ClearSelection')
+    App.Do(E, 'SelectNone')
+
+
+def load_sel(n):
+    """ Loads the Selection named 'n'. """
+    App.Do(E, 'SelectLoadAlpha', {
+        'AlphaName': n,
+        'SourceImage': 0,
+        'AlphaIndex': None,
+        'SelectionOperation': App.Constants.SelectionOperation.Replace,
+        'UpperLeft': 0,
+        'ClipToCanvas': 0,
+        'Invert': 0,
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def make_fill_layer(a, i=WHOLE, color=(0, 0, 0)):
+    """
+    - Alerts user to the Fill process.
+    - Gets the material from the user.
+    - Fills a new raster layer with the material.
+    'a' describes the Fill target.
+    'i' is the name of the Selection to isolate. """
+    new_r_layer(a)
+    do_color_fill(color)
+    isolate_sel(i)
+
+
+def make_raster():
+    App.Do(E, 'MultiLayerConvertToRaster', {'Path': None, 'WorkingMode': 0})
+
+
+def make_selection(mask_type):
+    App.Do(E, 'MaskFromImage', {
+        'CreateMaskFrom': mask_type,
+        'InvertMaskData': 0,
+        'SourceImage': 0,
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+    App.Do(E, 'SelectFromMask')
+
+
+def make_side_sel(radius, center, size, eye):
+    """ Creates a selection for a side. The Selection is named 'force'. """
+    n = WHOLE
+    half = center[0] + center[0] % 2
+
+    # Draw base:
+    new_v_layer(n)
+    draw_circle(BLK, radius, center)
+    save_masked(n)
+
+    # Remove half:
+    make_raster()
+    sel_rect((0, 0), (half, size))
+    App.Do(E, 'ClearSelection')
+    App.Do(E, 'SelectNone')
+    hide_layer()
+
+    # Get tail Selection:
+    head = radius / 2
+    x = half
+    y1 = y = half - head
+
+    save_part_selection(head, (x, y), TAIL)
+
+    # Get eye Selection:
+    y = half + head + head % 2
+    p = x, y
+
+    save_part_selection(eye, p, EYE)
+    new_v_layer("Side")
+
+    # Draw head:
+    draw_circle(BLK, head, p)
+    make_raster()
+    App.Do(E, 'LayerMergeDown')
+    show_layer()
+
+    for s in (EYE, TAIL):
+        load_sel(s)
+        App.Do(E, 'ClearSelection')
+
+    # Draw ghost eye:
+    p = x, y1
+
+    new_v_layer(EYE)
+    draw_circle(BLK, eye, p)
+    make_raster()
+
+    # Create mask of force:
+    save_masked(FORCE)
+    App.Do(E, 'DeleteLayer')
+    App.Do(E, 'DeleteLayer')
+
+
+def make_white_layer(n):
+    """
+    Creates a new raster layer filled with white.
+
+    n : string
+        the name of the layer
+    """
+    new_layer('NewRasterLayer', n)
+    do_color_fill(255)
+
+
+def new_layer(t, n):
+    """ 't' is the layer type. 'n' is the layer name. """
+    b = 0, 0, 255, 255, 0, 0, 255, 255
+    App.Do(E, t, {
+        'BlendRanges': {
+            'BlendRangeGreen': b,
+            'BlendRangeRed': b,
+            'BlendRangeBlue': b,
+            'BlendRangeGrey': b},
+
+        'General': {
+            'UseHighlight': 0,
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'GroupLink': 0,
+            'IsVisible': 1,
+            'IsTransparencyLocked': 0,
+            'LinkSet': 0,
+            'Opacity': 100,
+            'Name': n},
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def new_r_layer(n):
+    """ Create a new raster layer named, 'n'. """
+    new_layer('NewRasterLayer', n)
+
+
+def new_v_layer(n):
+    """ 'n' is the name of the new Vector layer. """
+    new_layer('NewVectorLayer', n)
+
+
+def save_masked(n, mask_type=App.Constants.CreateMaskFrom.Opacity):
+    """
+    - Isolates black pixels with a mask.
+    - Saves a Selection to the alpha channel based on the mask.
+    - Removes the mask group.
+    'n' is the name of the Selection. """
+    do_sl(0)
+    App.Do(E, 'LayerDuplicate')
+    make_selection(mask_type)
+    App.Do(E, 'SelectSaveAlpha', {
+        'SourceImage': 0,
+        'AlphaName': n,
+        'Overwrite': 1,
+        'UpperLeft': 0,
+        'AlphaIndex': 0,
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SelectLayer', {'Path': (1, 0, [], True)})
+    App.Do(E, 'LayerMergeGroup')
+    App.Do(E, 'DeleteLayer')
+    App.Do(E, 'SelectNone')
+
+
+def save_part_selection(r, p, n):
+    """
+    - Draws a circle.
+    - Creates a Selection from it.
+    - Saves the Selection.
+    'r' is the radius of the circle. 'p' is the center point of the circle.
+    'n' is the name of the Selection. """
+    new_v_layer(n)
+    draw_circle(BLK, r, p)
+    make_raster()
+    save_masked(n)
+    App.Do(E, 'DeleteLayer')
+
+
+def sel_rect(p, q):
+    """ A Selection is made from two points: p, q. """
+    App.Do(E, 'Selection', {
+        'SelectionShape': App.Constants.SelectionShape.Rectangle,
+        'Start': p,
+        'End': q,
+        'General': {
+            'Mode': App.Constants.SelectionOperation.Replace,
+            'Antialias': 0,
+            'Feather': 0}})
+
+
+def show_layer():
+    App.Do(E, 'LayerSetVisibility', {'Command': 0, 'Path': None, 'WorkingMode': 0})
+
+
+def start():
+    """ Start the Yin-Yang creation process. """
+    diameter = 400
+    width = 1
+    radius = diameter / 2
+    size = diameter + width * 2 + 24
+    eye = radius / 6
+    center = size / 2, size / 2
+
+    App.Do(E, 'NewFile', {
+        'Width': size,
+        'Height': size,
+        'Transparent': 1,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    App.Do(E, 'SelectDocument', {'SelectedImage': 0, 'Strict': 0})
+    App.Do(E, 'LayerProperties', {
+        'General': {
+            'Name': 'Base'}, 'GeneralSettings': {
+                'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+    make_white_layer("Base Background")
+
+    # Move white base background to appear beneath the Yin-Yang symbol:
+    App.Do(E, 'LayerArrange', {
+        'Path': (0, -1, [], 0), 'MoveAboveSibling': 0})
+
+    hide_layer()
+    do_sl(1)
+    make_side_sel(radius, center, size, eye)
+
+    # Fill one side with color:
+    make_fill_layer("first side", color=85)
+    isolate_sel(FORCE)
+    hide_layer()
+
+    # Fill other side with a user-defined color:
+    make_fill_layer("other side", color=170)
+    isolate_sel(FORCE, i=1)
+    hide_layer()
+    do_sl(-2)
+
+    # Draw circumference:
+    n = "circumference"
+    save_part_selection(radius + width, center, n)
+    make_fill_layer(n, i=n, color=0)
+    App.Do(E, 'LayerMergeDown')
+
+    for _ in range(2):
+        do_sl(1)
+        show_layer()
+        App.Do(E, 'LayerMergeDown')
+
+    # Merge with white base background:
+    do_sl(-1)
+    show_layer()
+    do_sl(1)
+    App.Do(E, 'LayerMergeDown')
+    convert_to_wireframe()
+
+    App.Do(E, 'LayerProperties', {
+        'General': {
+            'Name': 'RCM Sybmol'}, 'GeneralSettings': {
+                'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def Do(Environment):
+    """ Called by PSP. This is the start of the program.
+    - Sets 'E' as global. This works as long as nothing else changes 'E'.
+    - Clears the script window contents.
+    - Starts the main process. """
+    global E
+
+    E = Environment
+
+    App.Do(E, 'EnableOptimizedScriptUndo')
+    App.Do(E, 'ScriptWndClear')
+    print "Starting ", program_title + ".\n"
+    start()
