@@ -5,7 +5,6 @@
 a:link {
   text-decoration: none;
   font-style: oblique;
-  color: black;
   font-weight: bold;
 }
 
@@ -20,7 +19,7 @@ a:visited {
 
 abbr {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: small;
+  font-size: smaller;
   border-bottom: none;
   text-decoration: none;
 }
@@ -31,7 +30,6 @@ body {
 
 h1 {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: xx-large;
 }
 
 h2,
@@ -81,6 +79,7 @@ iframe {
 .nav li {
   display: inline-block;
   font-family: Arial, Helvetica, sans-serif;
+  font-size: smaller;
   border: 1px solid #888;
   margin: 0px;
 }
@@ -94,12 +93,11 @@ iframe {
 
 .nav li:hover {
   background-color: #d5cfe6;
-  color: #111111;
 }
 
 .text-shadow {
   text-shadow: -1px 10px 12px #555555;
-  color: #000000;
+  font-size: larger;
 }
 
 .flex-container {
@@ -112,14 +110,13 @@ iframe {
 
 .flex-container > div {
   background-color: transparent;
-  margin-left: 75px;
   text-align: center;
 }
 
 .flex-container > nav {
   background-color: transparent;
-  margin-left: 75px;
   text-align: right;
+  margin-right: 20px;
 }
 
 img {
