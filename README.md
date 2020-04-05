@@ -2,7 +2,9 @@ Thank you for comming! We've made it this far. Let's keep it going.</b>
 
 **Start A Revolution**</b>
 
-I recommend downloading the website repository and perusing the website from the 'index.html' page. In particular, the welcome page has links to the RCM charter and business plan, and the community page has links to the community charter and community business plan.
+I recommend downloading the website repository and perusing the website from the 'index.html' page. If your willing to study, you will find that the welcome page has links to the RCM charter and business plan, and the community page has links to the community charter and community business plan.
+
+I am working on website everyday. So, you may also want to come back later and check it out.
 
 **How To Be A RCM Volunteer?**</b>
 
