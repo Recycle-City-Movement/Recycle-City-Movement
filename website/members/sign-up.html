@@ -9,13 +9,30 @@
         font-size: smaller;
       }
       th   {
-        /*padding-bottom: 20px;*/
         padding: 20px 0 0 20px;
         text-align: left;
       }
+      input, select {
+        box-shadow: 0px 0px 4px #aaaaaa;
+        background-color: #ddffff;
+        border: 0px;
+      }
+
+      select > option {
+        background: #ddffff;
+        box-shadow: 0px 0px 8px #aaaaaa;
+      }
+
     </style>
   </head>
   <body class="text-shadow">
+    <div>
+      <img
+        style="float: left; margin: 20px;"
+        src="../img/formation-symbol/formation-symbol.png"
+        alt="Formation"
+      />
+    </div>  
     <h3>Sign-up</h3>
     <p>
       If you'd like to join
@@ -26,8 +43,8 @@
     </p>
     <p>
       If you're okay with the the
-      <a href="../business/terms-and-conditions.html" target="_blank">terms and conditions</a>
-      , then fill out this form. The form has mandatory
+      <a href="../business/terms-and-conditions.html" target="_blank">terms and conditions</a>,
+     then fill out this form. The form has mandatory
       entries that have an asterisk, '*', in their labels.
     </p>
     <p>
@@ -39,7 +56,7 @@
       member.
     </p>
 
-    <form>
+    <form action="<?php $_PHP_SELF ?>" method="post">
       <table>
         <tr>
           <th>
@@ -155,7 +172,8 @@
         </tr>
         <tr>
           <th>
-            <input type="submit" value="Submit">
+            <input type="submit" value="Submit Membership"
+            style="width: 150px; height: 20px; background: #ccccee; border: 1px solid#222222;" >
           </th>
         </tr>
       </table>
