@@ -1,0 +1,309 @@
+from PSPApp import *
+import math
+
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+GENERAL_SETTINGS = {'GeneralSettings': SILENT}
+CENTER_X = 500
+CENTER_Y = 500
+LINE_WIDTH = 36
+RADIUS = 480
+DEGREE_45 = 0.785398
+DEGREE_90 = 1.5708
+
+
+"""
+This script creates a Formation Symbol.
+The symbol is saved with
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'',
+        'Copyright': u'',
+        'Description': u'',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'19.00'}
+
+
+def add_vector_layer(layer_name):
+    select_layer_below()
+    make_new_vector_layer(layer_name)
+
+
+def draw_circle(radius, line_color):
+    # Draw a circle at the center of the image:
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt',7.21,7.21),
+            'LastCap': (u'Butt',1,1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': LINE_WIDTH,
+        'Stroke': {
+            'Color': line_color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5 - LINE_WIDTH,
+        'RadiusY': radius - .5 - LINE_WIDTH,
+        'CenterX': CENTER_X,
+        'CenterY': CENTER_Y,
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def draw_line(a, b):
+    """
+    Draws a line between points a and b.
+    The vector layer must have been prepped with NewDrawingObject.
+
+    a : point
+    b : point
+    Points are a pair of floating point numbers representing x, y.
+    """
+    # Calculate the difference between point a and b:
+    d = (int(b[0] - a[0]), int(b[1] - a[1]))
+
+    # Draw the point:
+    App.Do(Environment, 'NodeEditOffset', {
+        'NodeEditOffsetPoint': d,
+        'NodeEditAddPoint': a,
+        'NodeEditNodeOffsetControlKeyState': False,
+        'NodeEditNodeOffsetShiftKeyState': False,
+        'NodeEditNodeOffsetAddNode': True,
+        'NodeEditNodeOffsetPart': 0,
+        'NodeEditNodeOffsetDoLine': True,
+        'NodeEditContinuous': False,
+        'GeneralSettings': SILENT})
+
+
+def draw_square(radius, line_color, angle):
+    """
+    Draws a square inside the circle with a radius.
+
+    radius : float
+        This the radius of the square.
+
+    line_color : tuple
+    These are colors are (r, g, b),
+    where r, g, b are color component integers.
+
+    up : bool
+        When true, the triangle points up.
+        Otherwise, the triangle points down.
+
+    return:
+        float
+            radius of the inscribed circle of the triangle
+    """
+    prep_for_drawing_line(line_color)
+
+    for angle2 in range(4):
+        angle2 = angle + DEGREE_90
+        ax, ay = get_point(angle, radius)
+        bx, by = get_point(angle2, radius)
+        angle = angle2
+        draw_line((ax, ay), (bx, by))
+
+    # Calculate next radius:
+    midy = (ay + by) / 2
+    midx = (ax + bx) / 2
+    next_radius = math.sqrt(pow(midx - CENTER_X ,2) + pow(midy - CENTER_Y, 2))
+    print next_radius
+    return next_radius
+
+
+def get_point(angle, radius):
+    """
+    Returns a point the circle that corresponds to the rotation.
+
+    angle : float
+        the rotation angle.
+
+    radius : float
+        the radius of the circle.
+
+    Returns:
+        x : float
+        y : float
+        the point on the circle.
+    """
+    x = (math.sin(angle) * radius) + CENTER_X
+    y = (math.cos(angle) * -radius) + CENTER_Y
+    return x, y
+
+
+def make_new_vector_layer(layer_name):
+    """
+    Creates a new vector layer.
+
+    layer_name : string
+        This is the name of the vector layer.
+    """
+    App.Do(Environment, 'NewVectorLayer', {
+        'General': {
+            'Opacity': 100,
+            'Name': layer_name,
+            'IsVisible': True,
+            'IsTransparencyLocked': False,
+            'LinkSet': 0,
+            'UseHighlight': False,
+            'PaletteHighlightColor': (255, 255, 64),
+            'GroupLink': True,
+            'BlendMode': App.Constants.BlendMode.Normal},
+
+        'BlendRanges': {
+            'BlendRangeGreen': (0,0,255,255,0,0,255,255),
+            'BlendRangeRed': (0,0,255,255,0,0,255,255),
+            'BlendRangeBlue': (0,0,255,255,0,0,255,255),
+            'BlendRangeGrey': (0,0,255,255,0,0,255,255)},
+        'GeneralSettings': SILENT})
+
+
+def prep_for_drawing_line(line_color):
+    """
+    Prepare PSP to draw some vectors with a line_color attribute.
+
+    line_color : (r, g, b)
+        r, g, b are integers of color components.
+    """
+    App.Do(Environment, 'NewDrawingObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt',7.21,7.21),
+            'LastCap': (u'Butt',1,1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': LINE_WIDTH,
+        'Stroke': {
+            'Color': line_color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Path': None,
+        'ObjectName': u'Triangle',
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def select_layer_below():
+    """
+    Selects the layer that is in the current stack
+    and below the current selected layer.
+    """
+    App.Do(Environment, 'SelectLayer', {
+        'Path': (0, -1, [], True),
+        'GeneralSettings': SILENT})
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+
+    Environment = E
+    App.Do(Environment, 'EnableOptimizedScriptUndo', GENERAL_SETTINGS)
+
+    # This forms the base layer:
+    App.Do(Environment, 'NewFile', {
+        'Width': 1000,
+        'Height': 1000,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'FillMaterial': {
+            'Color': (255, 255, 255),
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Transparent': False,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'GeneralSettings': SILENT})
+
+    # Select document for drawing vectors:
+    App.Do(Environment, 'SelectDocument', {
+        'SelectedImage': 0,
+        'Strict': False,
+        'GeneralSettings': SILENT})
+
+    # circle 1
+    make_new_vector_layer("Circle 1")
+    draw_circle(RADIUS, (32, 184, 255))
+
+    # square 1:
+    add_vector_layer("Square 1")
+    next_radius = draw_square(RADIUS - LINE_WIDTH, (184, 127, 127), DEGREE_45)
+    
+    # square 2:
+    add_vector_layer("Rotated Square")
+    next_radius = draw_square(next_radius, (127, 64, 0), DEGREE_90)
+
+    # square 3:
+    add_vector_layer("Square 3")
+    next_radius = draw_square(next_radius, (64, 32, 0), DEGREE_45)
+
+    # Hide the background layer:
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Hide,
+        'Path': (0, -1, [], False),
+        'WorkingMode': 0,
+        'GeneralSettings': SILENT})
+
+    # Merge vector layers into one layer:
+    App.Do(Environment, 'LayerMergeVisible', GENERAL_SETTINGS)
+
+    # Make the symbol 3D:
+    App.Do( Environment, 'DropShadow', {
+        'Blur': 8,
+        'Color': (0, 0, 0),
+        'Horizontal': 0,
+        'NewLayer': True,
+        'Opacity': 88,
+        'Vertical': 0,
+        'GeneralSettings': SILENT})
