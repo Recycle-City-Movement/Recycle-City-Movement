@@ -1,0 +1,977 @@
+from PSPApp import *
+import math
+import random
+
+# degrees:
+DEGREE_30 = .523599
+DEGREE_45 = .785398
+DEGREE_60 = 1.0472
+DEGREE_90 = 1.5708
+DEGREE_120 = 2.0944
+DEGREE_180 = 3.14159
+DEGREE_240 = 4.18879
+DEGREE_300 = 5.23599
+
+# color:
+BLACK = 0, 0, 0
+WHITE = 255, 255, 255
+
+# Increase this value if you want to
+# expand the last ring frame beyond 50 pixels:
+LAST_RING_SPACE = 100   # best if even value
+
+# enum:
+LINES, PETALS, CIRCLES = 1, 2, 3
+
+# PSP:
+INTERACTIVE = {'ExecutionMode': App.Constants.ExecutionMode.Interactive}
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+GENERAL_SETTINGS = {'GeneralSettings': SILENT}
+GRADIENT = {
+    'Name': u'Corel_06_001',
+    'GradientType': App.Constants.Gradient.Sunburst,
+    'Angle': 0,
+    'RepeatCount': 0,
+    'RepeatType': App.Constants.RepeatType.Pad,
+    'ColorStops': None,
+    'TransparencyStops': [],
+    'CenterPoint': (.5, .5),
+    'FocalPoint': (.5, .5),
+    'Invert': False}
+
+BLEND ={
+    'BlendRangeGreen': (0,0,255,255,0,0,255,255),
+    'BlendRangeRed': (0,0,255,255,0,0,255,255),
+    'BlendRangeBlue': (0,0,255,255,0,0,255,255),
+    'BlendRangeGrey': (0,0,255,255,0,0,255,255)}
+
+# circle focus points:
+ring_center = [0] * 6
+xtra_ring = [0] * 12
+
+RING_COLORS = 7
+
+# Presets are useful when creating a new flower,
+# and preserving an existing design.
+# Some things to keep in mind:
+#    Presets have to be a list type
+# as these are (bracketed []).
+#   The RGB values range from 0 to 255.
+#   The variable 'ring_colors' needs to point to a preset.
+#   Petals and circle flower types process colors by first
+#   intersecting the color rings with a difference layer property,
+#   and then inverting these colors with a negative operation.
+#   It is hard to guess what the output is going to be.
+
+# These are pretty much random:
+preset1 = [
+        [32, 8, 8],
+        [87, 64, 32],
+        [127, 87, 32],
+        [64, 48, 32],
+        [32, 18, 87],
+        [9, 24, 127],
+        [0, 48, 187]
+    ]
+
+# more random:
+preset2 = [
+        [88, 64, 8],
+        [88, 64, 8],
+        [88, 64, 8],
+        [120, 32, 8],
+        [120, 32, 8],
+        [120, 32, 8],
+        [120, 32, 8]
+    ]
+
+# This is a solid color experiment:
+preset3 = [
+        [64, 8, 64],
+        [64, 8, 64],
+        [64, 8, 64],
+        [64, 8, 64],
+        [64, 8, 64],
+        [64, 8, 64],
+        [64, 8, 64]
+    ]
+
+# This is a solid color experiment:
+preset4 = [
+        [32, 188, 255],
+        [32, 188, 255],
+        [32, 188, 255],
+        [32, 188, 255],
+        [32, 188, 255],
+        [32, 188, 255],
+        [32, 188, 255],
+    ]
+
+# This is an experiment in two colors:
+preset5 = [
+        [8, 32, 255],
+        [255, 255, 255],
+        [8, 32, 255],
+        [255, 255, 255],
+        [8, 32, 255],
+        [255, 255, 255],
+        [8, 32, 255],
+    ]
+
+# You can copy and paste the preset1 and preset2 arrays,
+# rename the copy to preset6, preset7, etc...
+# To use a coded preset, equate 'ring_colors' to the preset
+# as below:
+ring_colors = preset5
+
+"""
+This script creates a Flower Of Life Symbol that is black and white,
+colored (randomly or with preset).
+
+It is recommended that the symbol be saved with a
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+The script will run in the restricted mode.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'Charles Bartley',
+        'Copyright': u'GNU 3.0',
+        'Description': u'Draws a Flower of Life symbol.',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'15.00'}
+
+
+def add_vector_layer(layer_name):
+    """ Adds a vector layer immediately below the current selected layer. """
+    select_layer(-1)
+    make_new_vector_layer(layer_name)
+
+
+def convert_vector():
+    """ Convert the vector layer to raster. """
+    App.Do(Environment, 'VectorSelectionUpdate', {
+        'Path': (0, 1, [], False),
+        'Type': App.Constants.ObjectSelection.Select,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'MultiLayerConvertToRaster', {
+        'Path': None,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def convert_vector_differ():
+    """
+    Convert the vector layer to raster and make it a difference layer.
+    LINES type layers remain normal layers.
+    """
+    convert_vector()
+    if flower_type != LINES:
+        App.Do(
+            Environment,
+            'LayerProperties', {
+                'General': {'BlendMode': App.Constants.BlendMode.Difference},
+            'GeneralSettings': SILENT})
+
+
+def create_selection_from_image(
+            mask_from=App.Constants.CreateMaskFrom.Luminance,
+            invert_flag=False
+        ):
+    """
+    Creates a selection after creating a mask. The mask can be
+    defined by the 'mask_from' variable.
+    The selected layer is deleted after the selection is made.
+
+    mask_from : mask type
+        these are defined by PSP
+
+    invert_flag : boolean
+        if true the mask is inverted when it is created
+    """
+    App.Do(Environment, 'MaskFromImage', {
+        'CreateMaskFrom': mask_from,
+        'InvertMaskData': invert_flag,
+        'SourceImage': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectFromMask', {'GeneralSettings': SILENT})
+    App.Do(Environment, 'VectorSelectionUpdate', {
+        'Path': (1, 0, [], True),
+        'Type': App.Constants.ObjectSelection.Select,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'LayerMergeGroup', GENERAL_SETTINGS)
+    delete_layer()
+
+
+def delete_layer():
+    """ Deletes the selected layer. """
+    App.Do(Environment, 'DeleteLayer', {
+        'Path': None,
+        'MergeMask': True,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def do_msg(b, i, t):
+    """
+    Opens a message box.
+    Returns None or the answer to a query.
+
+    b : button type
+        0=okay, 2=yes/no
+
+    i : icon type
+        0=error, 1=info, 2=query
+
+    t : text
+        the displayed in the message box
+    """
+    return App.Do(Environment, 'MsgBox', {'Buttons': b, 'Icon': i, 'Text': t})
+
+
+def draw_1st_ring(color):
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        color of the circle
+    """
+    x = center_x
+    y = center_y - circle_radius
+    angle = 0
+    ring_radius = circle_radius
+
+    for i in range(6):
+        make_new_circle(i, x, y, color=color)
+        angle += DEGREE_60
+        x, y = get_point_on_circle(image_focus, angle, ring_radius)
+    make_group(5)
+
+
+def draw_2nd_ring(color):
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    ring_radius = circle_radius * 2
+    x = center_x
+    y = center_y - ring_radius
+    angle = 0
+
+    for i in range(6):
+        make_new_circle(i, x, y, color)
+
+        angle += DEGREE_60
+        x, y = get_point_on_circle(image_focus, angle, ring_radius)
+    make_group(5)
+
+
+def draw_3rd_ring(color):
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    angle1 = 0
+    angle2 = DEGREE_60
+
+    for i in range(6):
+        x, y = get_point_on_circle(image_focus, angle1, circle_radius)
+        x, y = get_point_on_circle((x, y), angle2, circle_radius)
+        ring_center[i] = x, y
+
+        make_new_circle(i, x, y, color)
+
+        angle1 += DEGREE_60
+        angle2 += DEGREE_60
+    make_group(5)
+
+
+def draw_4th_ring(color):
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    angle1 = 0
+    angle2 = DEGREE_60
+
+    for i in range(6):
+        a, b = ring_center[i]
+        x, y = get_point_on_circle((a, b), angle1, circle_radius)
+
+        make_new_vector_layer("Circle " + str(i) + ".2")
+        draw_circle(circle_radius, (x, y), color)
+        convert_vector_differ()
+
+        x, y = get_point_on_circle((a, b), angle2, circle_radius)
+
+        make_new_circle(i, x, y, color)
+
+        angle1 += DEGREE_60
+        angle2 += DEGREE_60
+    make_group(11)
+
+
+def draw_5th_ring(color):
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    radius = circle_radius * 3
+    angle = 0
+
+    for i in range(6):
+        x, y = get_point_on_circle(image_focus, angle, radius)
+        angle += DEGREE_60
+        make_new_circle(i, x, y, color)
+    make_group(5)
+
+
+def draw_6th_ring(color):
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    angle = -DEGREE_60
+
+    for i in range(6):
+        a, b = ring_center[i]
+        xtra_ring[i * 2 + 1] = a, b
+        xtra_ring[i * 2] = get_point_on_circle((a, b), angle, circle_radius)
+        angle += DEGREE_60
+
+    angle1 = 0
+    angle2 = DEGREE_60
+
+    # the last of the cube, the last edge:
+    for j in range(2):
+        k = (0, 2)[j]
+        for i in range(3):
+            a, b = xtra_ring[i + k]
+            c, d = get_point_on_circle((a, b), angle1, circle_radius)
+            x, y = get_point_on_circle((c, d), angle2, circle_radius)
+            make_new_circle(i, x, y, color)
+
+        angle1 += DEGREE_60
+        angle2 += DEGREE_60
+
+    angle1 = DEGREE_120
+    angle2 = DEGREE_180
+
+    for j in range(2):
+        k = (4, 6)[j]
+        for i in range(3):
+            a, b = xtra_ring[i + k]
+            c, d = get_point_on_circle((a, b), angle1, circle_radius)
+            x, y = get_point_on_circle((c, d), angle2, circle_radius)
+            make_new_circle(i, x, y, color)
+
+        angle1 += DEGREE_60
+        angle2 += DEGREE_60
+
+    angle1 = DEGREE_240
+    angle2 = DEGREE_300
+
+    for j in range(2):
+        k = (8, 10)[j]
+        for i in range(3):
+            if i + k > 11:
+                i = k = 0
+
+            a, b = xtra_ring[i + k]
+            c, d = get_point_on_circle((a, b), angle1, circle_radius)
+            x, y = get_point_on_circle((c, d), angle2, circle_radius)
+
+            make_new_circle(i, x, y, color)
+            if j or i:
+                merge_layer_down()
+
+        angle1 += DEGREE_60
+        angle2 += DEGREE_60
+
+    App.Do(Environment, 'LayerMergeAll', {
+        'WorkingMode': 0,
+        'GeneralSettings': SILENT})
+    promote_background()
+    if flower_type != LINES:
+        App.Do(Environment, 'NegativeImage')
+
+
+def draw_circle(radius, center, line_color, gradient=None, fill=False, line_width=0):
+    """
+    Draws a vector circle.
+
+    radius : number
+        the radius of the circle
+
+    center : point
+        the center coordinate (x, y) point of the circle
+
+    line_color : color of the circle edge and fill color.
+
+    gradient : gradient
+        if not None then it displaces line_color
+
+    fill : boolean
+        when true, the circle is filled with line_color
+        when None, the circle is not filled (over-rides)
+
+    line_width : integer
+        the line width of the circle
+        A zero value indicates that the default_line_width is used.
+    """
+    fill_color = None
+
+    if fill != None:
+        if not gradient:
+            if flower_type != LINES:
+                fill_color = line_color
+            elif fill:
+                fill_color = line_color
+
+    if fill_color:
+        fill_color = tuple(fill_color)
+
+    if line_color:
+        line_color = tuple(line_color)
+
+    if not line_width:
+        line_width = default_line_width
+
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': fill_color,
+            'Pattern': None,
+            'Gradient': gradient,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': line_width,
+        'Stroke': {
+            'Color': line_color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def draw_last_ring(color, last_ring_line_width):
+    """
+    Draws the last ring.
+
+    color : (r, g, b)
+        the color of the ring
+
+    last_ring_line_width : integer
+        the width of the circle stroke
+    """
+    if last_ring_line_width:
+        make_new_vector_layer("Last Ring")
+        draw_circle(
+            flower_radius + last_ring_line_width / 2,
+            (center_x, center_y),
+            color, fill=None,
+            line_width=last_ring_line_width)
+
+        convert_vector()
+        merge_layer_down()
+
+
+def get_point_on_circle(center, angle, radius):
+    """
+    Returns a point on the circle that corresponds to a rotation angle.
+
+    center : point of (x, y) integers
+        center of the circle
+
+    angle : float
+        the rotation angle
+
+    radius : float
+        the radius of the circle
+
+    Returns:
+        x : float
+        y : float
+        the point on the circle.
+    """
+    x = (math.sin(angle) * radius) + center[0]
+    y = (math.cos(angle) * -radius) + center[1]
+    return x, y
+
+
+def get_number(default_value, min_value, max_value, title, prompt):
+    """
+    Gets a number from the user.
+
+    Returns an integer response and zero if the user cancels.
+
+    default_value : integer
+        the initial value
+
+    min_value : integer
+        the lowest  allowed value
+
+    max_value : integer
+        the highest allowed value
+
+    title : text
+        title of dialog
+
+    prompt : text
+        the message for the user
+    """
+    answer = 0
+    a = App.Do(Environment, 'GetNumber', {
+        'DefaultValue': default_value,
+        'MinValue': min_value,
+        'MaxValue': max_value,
+        'DialogTitle': title,
+        'Prompt': prompt,
+        'GeneralSettings': INTERACTIVE})
+
+    if a['OKButton']:
+        answer = a['EnteredNumber']
+    return answer
+
+
+def hide_layer(offset):
+    """
+    Hides a layer.
+
+    offset : integer
+        offset of layer in layer palette (current stack)
+    """
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Hide,
+        'Path': (0, offset, [], False),
+        'WorkingMode': 0,
+        'GeneralSettings': SILENT})
+
+
+def make_new_circle(i, x, y, color=WHITE):
+    """
+    Draws a circle on a new vector layer,
+    then converts it to a raster layer.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    make_new_vector_layer("Circle " + str(i))
+    draw_circle(circle_radius, (x, y), color)
+    convert_vector_differ()
+
+
+def make_group(layer_count, mode=App.Constants.BlendMode.Difference):
+    """
+    Makes a group of layers that are below the current
+    selected layer.
+
+    layer_count : integer
+        the number of layers to add to the group
+    """
+    if flower_type == LINES:
+        mode = App.Constants.BlendMode.Normal
+
+    for i in range(layer_count):
+        App.Do(Environment, 'VectorSelectionUpdate', {
+            'Path': (0, -1, [], False),
+            'Type': App.Constants.ObjectSelection.AddToSelection,
+            'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'NewLayerGroup', {
+        'General': {
+            'Opacity': 100,
+            'Name': "Ring",
+            'IsVisible': True,
+            'IsTransparencyLocked': False,
+            'LinkSet': 0,
+            'UseHighlight': False,
+            'PaletteHighlightColor': (255, 255, 64),
+            'GroupLink': True,
+            'BlendMode': mode},
+        'BlendRanges': BLEND,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'LayerMergeGroup', GENERAL_SETTINGS)
+
+
+def make_new_vector_layer(layer_name):
+    """
+    Creates a new vector layer.
+
+    layer_name : string
+        This is the name of the vector layer.
+    """
+    new_layer('NewVectorLayer', layer_name)
+
+
+def make_selection_for_whole(last_ring_line_width):
+    """
+    Create a mask for the flower-cube and last ring,
+    then create a selection from that mask.
+    """
+    # Covers the perimeter:
+    for i in range(12):
+        x, y = xtra_ring[i]
+        make_new_vector_layer("Mask 1 " + str(i))
+        draw_circle(circle_radius, (x, y), BLACK, fill=True)
+        convert_vector()
+
+    # Covers the center:
+    make_new_vector_layer("Mask 2")
+    draw_circle(circle_radius * 2, image_focus, BLACK, fill=True)
+    convert_vector()
+
+    # Merge the masks:
+    make_group(12, mode=App.Constants.BlendMode.Normal)
+
+    # last ring:
+    draw_last_ring(BLACK, last_ring_line_width)
+
+    # Make selection:
+    create_selection_from_image(mask_from=App.Constants.CreateMaskFrom.Opacity, invert_flag=True)
+
+    # Clear the excess circles from the flower-cube:
+    App.Do(Environment, 'ClearSelection', {'GeneralSettings': SILENT})
+    show_layer(0)
+
+    if flower_type in (LINES, PETALS):
+        # Lines and petals have white space that needs to be cleared:
+        App.Do(Environment, 'SelectNone')
+        App.Do(Environment, 'LayerDuplicate')
+        select_layer(-1)
+        make_white_layer()
+        create_selection_from_image()
+
+        # Remove the white space:
+        App.Do(Environment, 'ClearSelection', {'GeneralSettings': SILENT})
+        select_layer(1)
+        delete_layer()
+
+
+def make_white_layer():
+    """ Creates a white raster layer. """
+    new_layer('NewRasterLayer', 'white layer')
+    App.Do(Environment, 'Fill', {
+        'BlendMode': App.Constants.BlendMode.Normal,
+        'MatchMode': App.Constants.MatchMode.None,
+        'UseForeground': True,
+        'Opacity': 100,
+        'Point': (1.5, 1.5),
+        'SampleMerged': 0,
+        'Tolerance': 200,
+        'Material': {
+            'Color': WHITE,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Identity': "Material"}})
+
+
+def merge_layer_down():
+    """ Merges layer down. """
+    App.Do(Environment, 'LayerMergeDown', {'Path': None, 'GeneralSettings': SILENT})
+
+
+def new_layer(t, n):
+    """
+    Creates a new layer.
+
+    t : layer type
+        raster or vector
+
+    n : string
+        the layer name.
+    """
+    App.Do(Environment, t, {
+        'BlendRanges': BLEND,
+        'General': {
+            'UseHighlight': 0,
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'GroupLink': 0,
+            'IsVisible': 1,
+            'IsTransparencyLocked': 0,
+            'LinkSet': 0,
+            'Opacity': 100,
+            'Name': n},
+        'GeneralSettings': SILENT})
+
+
+def promote_background():
+    """ Promote the background layer so that it can have transparency. """
+    App.Do(Environment, 'LayerPromoteBackground', {'GeneralSettings': SILENT})
+
+
+def select_layer(offset):
+    """
+    Selects a layer in the current stack.
+
+    offset : integer
+        the path offset in the current stack
+    """
+    App.Do(Environment, 'SelectLayer', {
+        'Path': (0, offset, [], True),
+        'GeneralSettings': SILENT})
+
+
+def show_layer(offset):
+    """
+    Shows a layer.
+
+    offset : integer
+        the path offset in the current stack
+    """
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Show,
+        'Path': (0, offset, [], True),
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+    global image_focus, circle_radius, center_y, center_x, flower_radius
+    global default_line_width, flower_type, ring_colors
+
+    Environment = E
+    App.Do(Environment, 'EnableOptimizedScriptUndo', GENERAL_SETTINGS)
+
+    go = get_number(
+        480,
+        60,
+        960,
+        "Setting Flower Radius",
+        "Please enter the radius of the flower"
+        " (divisible by 2 and 3 will produce the best results).")
+
+    if go:
+        flower_radius = go
+        center_y = center_x = flower_radius + LAST_RING_SPACE / 2
+        circle_radius = flower_radius / 3
+        image_focus = center_x, center_y
+        image_size = flower_radius * 2 + LAST_RING_SPACE
+        default_line_width = 0
+
+        # This forms the base layer:
+        App.Do(Environment, 'NewFile', {
+            'Width': image_size,
+            'Height': image_size,
+            'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+            'DimensionUnits': App.Constants.DimensionType.Pixels,
+            'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+            'Resolution': 200,
+            'FillMaterial': {
+                'Color': (255, 255, 255),
+                'Pattern': None,
+                'Gradient': None,
+                'Texture': None,
+                'Art': None},
+
+            'Transparent': False,
+            'LayerType': App.Constants.NewLayerType.Raster,
+            'GeneralSettings': SILENT})
+
+        # Select document for drawing vectors:
+        App.Do(Environment, 'SelectDocument', {
+            'SelectedImage': 0,
+            'Strict': False,
+            'GeneralSettings': SILENT})
+
+        promote_background()
+
+        go = get_number(
+            2,
+            1,
+            3,
+            "Choose Flower Type",
+            "Please enter the type of flower:\n"
+            "1 for lines, 2 for petals, 3 for circles.")
+
+        if go:
+            flower_type = go
+
+            if flower_type == LINES:
+                go = get_number(
+                    default_line_width,
+                    1,
+                    12,
+                    "Enter Line Width",
+                    "Please enter the width of the lines:")
+                if go:
+                    default_line_width = go
+
+        if go:
+            color = BLACK if flower_type == LINES else WHITE
+
+            # center circle:
+            make_new_circle(0, center_x, center_y, color=color)
+            draw_1st_ring(color)
+            draw_2nd_ring(color)
+            draw_3rd_ring(color)
+            draw_4th_ring(color)
+            draw_5th_ring(color)
+            draw_6th_ring(color)
+
+            hide_layer(0)
+
+            last_ring_line_width = get_number(
+                0,
+                0,
+                LAST_RING_SPACE / 2,
+                "Circle the Flower",
+                "Please enter the line width of the circle "
+                "to surround the flower (zero is none).")
+
+            draw_last_ring(BLACK, last_ring_line_width)
+            make_selection_for_whole(last_ring_line_width)
+            App.Do(Environment, 'SelectSaveAlpha', {
+                'SourceImage': 0,
+                'AlphaName': u'flower',
+                'Overwrite': False,
+                'UpperLeft': False,
+                'AlphaIndex': None,
+                'GeneralSettings': SILENT})
+
+            App.Do(Environment, 'SelectNone')
+            show_layer(0)
+            App.Do(Environment, 'LayerProperties', {
+                'General': {'Name': 'Mask-able layer'},
+                'GeneralSettings': SILENT})
+
+            go = do_msg(2, 2, "Do you want to color the Flower of Life symbol?")
+
+    if go:
+        go = get_number(
+            1,
+            1,
+            2,
+            "Color Scheme",
+            "Please enter (1) for coded color "
+            "theme, or (2) for random color theme:")
+        if go == 2:
+            # Create random colors:
+            for i in range(RING_COLORS):
+                for j in range(3):
+                    ring_colors[i][j] = random.randint(0, 255)
+
+    if go:
+        hide_layer(0)
+
+        # Start coloring:
+        make_new_circle(0, center_x, center_y, color=ring_colors[0])
+        draw_1st_ring(ring_colors[1])
+        draw_2nd_ring(ring_colors[2])
+        draw_3rd_ring(ring_colors[3])
+        draw_4th_ring(ring_colors[4])
+        draw_5th_ring(ring_colors[5])
+        draw_6th_ring(ring_colors[6])
+
+        if last_ring_line_width:
+            r = g = b = 0
+
+            for i in range(RING_COLORS):
+                r += ring_colors[i][0]
+                g += ring_colors[i][1]
+                b += ring_colors[i][2]
+
+            r = int(r / RING_COLORS)
+            g = int(g / RING_COLORS)
+            b = int(b / RING_COLORS)
+            draw_last_ring((r, g, b), last_ring_line_width)
+
+        # Lighten the center and darken the edges:
+        make_new_vector_layer("Flower Circle")
+        draw_circle(flower_radius, image_focus, None, gradient=GRADIENT)
+        convert_vector_differ()
+        App.Do(Environment, 'NegativeImage')
+
+        # If you want to experiment, try different blend modes:
+        App.Do(Environment, 'LayerProperties', {
+            'General': {
+                'BlendMode': App.Constants.BlendMode.Multiply,
+                'Opacity': 100},
+            'GeneralSettings': SILENT})
+        yes = do_msg(2, 2, "Would you like to increase the gradient effect?")
+
+        if yes:
+            App.Do(Environment, 'LayerDuplicate')
+
+        App.Do(Environment, 'LayerMergeAll', {
+            'WorkingMode': 0,
+            'GeneralSettings': SILENT})
+
+        promote_background()
+        App.Do(Environment, 'SelectLoadAlpha', {
+            'SourceImage': 0,
+            'AlphaIndex': 0,
+            'AlphaName': u'Backdrop Selection',
+            'SelectionOperation': App.Constants.SelectionOperation.Replace,
+            'UpperLeft': False,
+            'ClipToCanvas': False,
+            'Invert': False,
+            'GeneralSettings': SILENT})
+
+        App.Do(Environment, 'ClearSelection', {'GeneralSettings': SILENT})
+        App.Do(Environment, 'SelectNone')
+        go = 1
+
+    if go:
+        go = do_msg(2, 2, "Do you want to add a drop shadow?")
+
+    if go:
+        # Make the symbol 3D:
+        App.Do(Environment, 'DropShadow', {
+            'Blur': (8, 16, 22)[int(flower_type - 1)],
+            'Color': BLACK,
+            'Horizontal': 0,
+            'NewLayer': True,
+            'Opacity': 88,
+            'Vertical': 0,
+            'GeneralSettings': INTERACTIVE})
+
+    print "FYI, the color array was:"
+    for i in range(RING_COLORS):
+        print "\t", ring_colors[i]
