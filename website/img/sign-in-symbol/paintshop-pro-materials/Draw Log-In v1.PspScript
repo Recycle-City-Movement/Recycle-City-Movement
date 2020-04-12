@@ -1,0 +1,259 @@
+from PSPApp import *
+
+# color:
+BLACK = 0, 0, 0
+
+# PSP:
+INTERACTIVE = {'ExecutionMode': App.Constants.ExecutionMode.Interactive}
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+GENERAL_SETTINGS = {'GeneralSettings': SILENT}
+
+BLEND ={
+    'BlendRangeGreen': (0,0,255,255,0,0,255,255),
+    'BlendRangeRed': (0,0,255,255,0,0,255,255),
+    'BlendRangeBlue': (0,0,255,255,0,0,255,255),
+    'BlendRangeGrey': (0,0,255,255,0,0,255,255)}
+
+
+ORIGINAL_SIZE = 900
+SCALE = 4
+DEFAULT_LINE_WIDTH = 30 * SCALE
+
+"""
+This script creates a Log-in Symbol.
+
+It is recommended that the symbol be saved with a
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+The script will run in the restricted mode.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'Charles Bartley',
+        'Copyright': u'GNU 3.0',
+        'Description': u'Draws a log-in symbol.',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'15.00'}
+
+
+def delete_layer():
+    """ Deletes the selected layer. """
+    App.Do(Environment, 'DeleteLayer', {
+        'Path': None,
+        'MergeMask': True,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def draw_circle(radius, center, color):
+    """
+    Draws a vector circle.
+
+    radius : number
+        the radius of the circle
+
+    center : point
+        the center coordinate (x, y) point of the circle
+
+    line_color : color of the circle edge and fill color.
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill':  {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': 0,
+        'Stroke': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def make_new_circle(i, radius, x, y, color):
+    """
+    Draws a circle on a new vector layer,
+    then converts it to a raster layer.
+
+    color : (r, g, b)
+        the color of the circle
+    """
+    make_new_vector_layer(i)
+    draw_circle(radius, (x, y), color)
+
+
+def make_new_vector_layer(layer_name):
+    """
+    Creates a new vector layer.
+
+    layer_name : string
+        This is the name of the vector layer.
+    """
+    new_layer('NewVectorLayer', layer_name)
+
+
+
+def new_layer(t, n):
+    """
+    Creates a new layer.
+
+    t : layer type
+        raster or vector
+
+    n : string
+        the layer name.
+    """
+    App.Do(Environment, t, {
+        'BlendRanges': BLEND,
+        'General': {
+            'UseHighlight': 0,
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'GroupLink': 0,
+            'IsVisible': 1,
+            'IsTransparencyLocked': 0,
+            'LinkSet': 0,
+            'Opacity': 100,
+            'Name': n},
+        'GeneralSettings': SILENT})
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+    global DEFAULT_LINE_WIDTH
+
+    Environment = E
+    App.Do(Environment, 'EnableOptimizedScriptUndo', GENERAL_SETTINGS)
+
+    # Scale up:
+    image_size = ORIGINAL_SIZE * SCALE
+    center = image_size / 2
+
+    # This forms the base layer:
+    App.Do(Environment, 'NewFile', {
+        'Width': image_size,
+        'Height': image_size,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'FillMaterial': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Transparent': True,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'GeneralSettings': SILENT})
+
+    # Select document for drawing vectors:
+    App.Do(Environment, 'SelectDocument', {
+        'SelectedImage': 0,
+        'Strict': False,
+        'GeneralSettings': SILENT})
+
+    main_radius = center
+    part = (main_radius - DEFAULT_LINE_WIDTH) * 2 / 7
+
+    make_new_circle("Power", main_radius, center, center, (255, 0, 255))
+    make_new_circle("Power", main_radius - DEFAULT_LINE_WIDTH, center, center, (0, 0, 0))
+
+    # Bottom:
+    radius = part * 2
+    y = center + part + part / 2
+
+    make_new_circle("Bottom", radius, center, y, (255, 10, 10))
+    make_new_circle("Bottom", radius - DEFAULT_LINE_WIDTH, center, y, BLACK)
+
+    # Mid:
+    radius = part
+    y = center - part - part / 2
+
+    make_new_circle("Mid", radius, center, y, (10, 250, 10))
+    make_new_circle("Mid", radius - DEFAULT_LINE_WIDTH, center, y, BLACK)
+
+    # Top:
+    radius = part / 2
+    y = center - part * 3
+
+    make_new_circle("Top", radius, center, y, (10, 10, 255))
+    make_new_circle("Top", radius- DEFAULT_LINE_WIDTH, center, y, BLACK)
+    App.Do(Environment, 'LayerMergeVisible')
+
+    # Remove the black areas:
+    App.Do(Environment, 'LayerDuplicate')
+
+    App.Do(Environment, 'MaskFromImage', {
+        'CreateMaskFrom': App.Constants.CreateMaskFrom.NonZero,
+        'InvertMaskData': True,
+        'SourceImage': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectFromMask')
+    App.Do(Environment, 'SelectLayer', {
+        'Path': (1, 0, [], True),
+        'GeneralSettings': SILENT})
+
+    delete_layer()
+    App.Do( Environment, 'ClearSelection')
+
+    # Scale back:
+    App.Do(Environment, 'Resize', {
+        'AspectRatio': 1,
+        'CurrentDimensionUnits': App.Constants.UnitsOfMeasure.Pixels,
+        'CurrentResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Width': ORIGINAL_SIZE,
+        'Height': ORIGINAL_SIZE,
+        'MaintainAspectRatio': False,
+        'Resample': True,
+        'ResampleType': App.Constants.ResampleType.Bicubic,
+        'ResizeAllLayers': True,
+        'Resolution': 200,
+        'SharpnessValue': 100,
+        'AdvancedMode': True,
+        'ResizeType': 1,
+        'OneSide_Type': 0,
+        'OneSide_LongWidth': ORIGINAL_SIZE,
+        'OneSide_ShortHeight': ORIGINAL_SIZE,
+        'OneSide_Unit': App.Constants.UnitsOfMeasure.Pixels,
+        'OneSide_Active': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do( Environment, 'SelectNone')
