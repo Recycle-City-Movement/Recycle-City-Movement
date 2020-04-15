@@ -1,0 +1,335 @@
+from PSPApp import *
+
+# color:
+BLACK = 0, 0, 0
+WHITE = 255, 255, 255
+GREY = 99, 99, 99
+
+# PSP:
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+GENERAL_SETTINGS = {'GeneralSettings': SILENT}
+
+BLEND ={
+    'BlendRangeGreen': (0,0,255,255,0,0,255,255),
+    'BlendRangeRed': (0,0,255,255,0,0,255,255),
+    'BlendRangeBlue': (0,0,255,255,0,0,255,255),
+    'BlendRangeGrey': (0,0,255,255,0,0,255,255)}
+
+# circle focus points:
+ZERO_RADIUS = 500
+BEARING_RADIUS = ZERO_RADIUS / 10
+
+"""
+This script creates a Flower Of Life Symbol that is black and white,
+colored (randomly or with preset).
+
+It is recommended that the symbol be saved with a
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+The script will run in the restricted mode.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'Charles Bartley',
+        'Copyright': u'GNU 3.0',
+        'Description': u'Draws a Zero Point symbol.',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'15.00'}
+
+
+def add_vector_layer(layer_name):
+    """ Adds a vector layer immediately below the current selected layer. """
+    select_layer(-1)
+    make_new_vector_layer(layer_name)
+
+
+def convert_vector():
+    """ Convert the vector layer to raster. """
+    App.Do(Environment, 'VectorSelectionUpdate', {
+        'Path': (0, 1, [], False),
+        'Type': App.Constants.ObjectSelection.Select,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'MultiLayerConvertToRaster', {
+        'Path': None,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def draw_overlay_bearings(x1, y1, x2, y2, radius):
+    """ Draws a circle on top of the ring. """
+    draw_circle(BEARING_RADIUS / 2, (x1, y1), WHITE)
+    draw_circle(BEARING_RADIUS / 2, (x2, y2), WHITE)
+
+
+def draw_between_bearings(x1, y1, x2, y2):
+    """ Draws a circle inbetween of a ring. """
+    print x1, y1
+    draw_circle(BEARING_RADIUS / 2, (x1, y1), BLACK)
+    draw_circle(BEARING_RADIUS / 2, (x2, y2), BLACK)
+
+
+def draw_rings():
+    """
+    Draw a ring of circles.
+
+    color : (r, g, b)
+        color of the circle
+    """
+    # outer ring:
+    x = center_x
+    y = center_y
+    radius = image_size / 2 - BEARING_RADIUS
+    make_new_ring("Ring", x, y, radius, BEARING_RADIUS, GREY)
+
+    x = center_x - radius # - BEARING_RADIUS
+
+    x2 = center_x + radius
+    y2 = y
+    draw_overlay_bearings(x, y, x2, y2, radius)
+
+    # middle ring:
+    x = center_x
+    radius = image_size / 2 - BEARING_RADIUS * 3
+
+    make_new_ring("Ring", x, y, radius, BEARING_RADIUS, GREY)
+
+    # middle bearings:
+    x = center_x - radius
+    x2 = center_x + radius
+    draw_overlay_bearings(x, y, x2, y2, radius)
+
+    # inner bearings:
+    x = x2 = center_x
+    y = center_y - radius
+    y2 = center_y + radius
+    draw_overlay_bearings(x, y, x2, y2, radius)
+
+    # inner ring:
+    radius = image_size / 2 - BEARING_RADIUS * 5
+    x = center_x
+    y = center_y
+    make_new_ring("Ring", x, y, radius, BEARING_RADIUS, GREY)
+
+    # outer bearings:
+    x1 = center_x - image_size / 2 + BEARING_RADIUS * 2
+    y2 = y1 = center_y
+    x2 = center_x + image_size / 2 - BEARING_RADIUS * 2
+    draw_between_bearings(x1, y1, x2, y2)
+
+    # inner bearings:
+    x1 = x2 = center_x
+    y1 = center_y - image_size / 2 + BEARING_RADIUS * 4
+    y2 = center_y + image_size / 2 - BEARING_RADIUS * 4
+    draw_between_bearings(x1, y1, x2, y2)
+
+
+def draw_circle(radius, center, color):
+    """
+    Draws a vector circle.
+
+    radius : number
+        the radius of the circle
+
+    center : point
+        the center coordinate (x, y) point of the circle
+
+    color : (r, g, b)
+        color of the circle.
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': 0,
+        'Stroke': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def draw_ring(radius, center, color, width):
+    """
+    Draws a ring.
+
+    radius : integer
+        the radius of the ring
+
+    center : point
+        center of the ring
+
+    color : (r, g, b)
+        color of the ring
+
+    width : integer
+        the width of the ring
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': width,
+        'Stroke': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def make_new_ring(i, x, y, radius, width, color=WHITE):
+    """ Creates a ring on a raster layer. """
+    make_new_vector_layer("Z-Ring " + str(i))
+    draw_ring(radius, (x, y), color, width)
+    convert_vector()
+
+
+def make_new_vector_layer(layer_name):
+    """
+    Creates a new vector layer.
+
+    layer_name : string
+        This is the name of the vector layer.
+    """
+    new_layer('NewVectorLayer', layer_name)
+
+
+def new_layer(t, n):
+    """
+    Creates a new layer.
+
+    t : layer type
+        raster or vector
+
+    n : string
+        the layer name.
+    """
+    App.Do(Environment, t, {
+        'BlendRanges': BLEND,
+        'General': {
+            'UseHighlight': 0,
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'GroupLink': 0,
+            'IsVisible': 1,
+            'IsTransparencyLocked': 0,
+            'LinkSet': 0,
+            'Opacity': 100,
+            'Name': n},
+        'GeneralSettings': SILENT})
+
+
+def select_layer(offset):
+    """
+    Selects a layer in the current stack.
+
+    offset : integer
+        the path offset in the current stack
+    """
+    App.Do(Environment, 'SelectLayer', {
+        'Path': (0, offset, [], True),
+        'GeneralSettings': SILENT})
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+    global image_size
+    global center_y, center_x
+
+    Environment = E
+    center_y = center_x = ZERO_RADIUS
+    image_size = ZERO_RADIUS * 2 + 2
+
+    App.Do(Environment, 'EnableOptimizedScriptUndo', GENERAL_SETTINGS)
+
+    # This forms the base layer:
+    App.Do(Environment, 'NewFile', {
+        'Width': image_size,
+        'Height': image_size,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'FillMaterial': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Transparent': True,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'GeneralSettings': SILENT})
+
+    # Select document for drawing vectors:
+    App.Do(Environment, 'SelectDocument', {
+        'SelectedImage': 0,
+        'Strict': False,
+        'GeneralSettings': SILENT})
+
+    draw_rings()
+    App.Do(Environment, 'LayerMergeVisible')
+    App.Do(E, 'LayerProperties', {
+        'General': {'Name': 'Zero Point'}, 'GeneralSettings': SILENT})
