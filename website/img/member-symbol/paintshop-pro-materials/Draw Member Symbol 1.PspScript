@@ -1,0 +1,306 @@
+from PSPApp import *
+import math
+import random
+
+# degrees:
+DEGREE_72 = 1.25664
+
+# color:
+ring_color = 233, 99, 99
+
+# PSP:
+INTERACTIVE = {'ExecutionMode': App.Constants.ExecutionMode.Interactive}
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+GENERAL_SETTINGS = {'GeneralSettings': SILENT}
+
+BLEND ={
+    'BlendRangeGreen': (0,0,255,255,0,0,255,255),
+    'BlendRangeRed': (0,0,255,255,0,0,255,255),
+    'BlendRangeBlue': (0,0,255,255,0,0,255,255),
+    'BlendRangeGrey': (0,0,255,255,0,0,255,255)}
+
+# circle focus points:
+CANVAS_RADIUS = 1000
+PETAL_RADIUS = CANVAS_RADIUS / 3
+CLOVER_RADIUS = PETAL_RADIUS * 2.75
+CLOVER_WIDTH = CLOVER_RADIUS / 28
+RING_WIDTH = CANVAS_RADIUS / 23
+RING_RADIUS = CLOVER_RADIUS + RING_WIDTH / 2
+
+clover_center = [0] * 5
+
+"""
+This script creates a Flower Of Life Symbol that is black and white,
+colored (randomly or with preset).
+
+It is recommended that the symbol be saved with a
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+The script will run in the restricted mode.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'Charles Bartley',
+        'Copyright': u'GNU 3.0',
+        'Description': u'Draws a Flower of Life symbol.',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'15.00'}
+
+
+def convert_vector():
+    """ Convert the vector layer to raster. """
+    App.Do(Environment, 'VectorSelectionUpdate', {
+        'Path': (0, 1, [], False),
+        'Type': App.Constants.ObjectSelection.Select,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'MultiLayerConvertToRaster', {
+        'Path': None,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def draw_clover(x, y, angle, ring_radius, circle_radius, color):
+    """ Draw a ring of circles. """
+    a, b = x, y
+
+    for i in range(5):
+        x, y = get_point_on_circle((a, b), angle, ring_radius)
+        if not clover_center[4]:
+            clover_center[i] = x, y
+
+        draw_circle(circle_radius, (x, y), color)
+        angle += DEGREE_72
+        convert_vector()
+    App.Do(Environment, 'LayerMergeVisible')
+
+
+def draw_clover_ring(x, y, ring_radius, circle_radius, color):
+    """
+    Draws five rings forming a circle
+    
+    x, y : point
+        center of ring of circles
+        
+    ring_radius : integer
+        radius of the ring of circles
+    
+    circle_radius : integer
+        radius of a ring
+        
+    color : (r, g, b)
+        color of the rings
+    """
+    a, b = x, y
+    angle = 0
+
+    for i in range(5):
+        x, y = get_point_on_circle((a, b), angle, ring_radius)
+        if not clover_center[4]:
+            clover_center[i] = x, y
+
+        draw_ring(circle_radius - CLOVER_WIDTH / 2, (x, y), color, CLOVER_WIDTH)
+        angle += DEGREE_72
+        convert_vector()
+    App.Do(Environment, 'LayerMergeVisible')
+
+
+def draw_circle(radius, center, color):
+    """
+    Draws a vector circle.
+
+    radius : number
+        the radius of the circle
+
+    center : point
+        the center coordinate (x, y) point of the circle
+
+    color : (r, g, b)
+        color of the circle.
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': 0,
+        'Stroke': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def draw_ring(radius, center, color, width):
+    """
+    Draws a ring.
+
+    radius : integer
+        the radius of the ring
+
+    center : point
+        center of the ring
+
+    color : (r, g, b)
+        color of the ring
+
+    width : integer
+        the width of the ring
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': width,
+        'Stroke': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def get_point_on_circle(center, angle, radius):
+    """
+    Returns a point on the circle that corresponds to a rotation angle.
+
+    center : point of (x, y) integers
+        center of the circle
+
+    angle : float
+        the rotation angle
+
+    radius : float
+        the radius of the circle
+
+    Returns:
+        x : float
+        y : float
+        the point on the circle.
+    """
+    x = int(math.sin(angle) * radius) + center[0]
+    y = int(math.cos(angle) * -radius) + center[1]
+    return x, y
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+    global image_size
+    global center_y, center_x
+    global clover_center
+
+    Environment = E
+    center_y = center_x = CANVAS_RADIUS
+    image_size = CANVAS_RADIUS * 2
+
+    App.Do(Environment, 'EnableOptimizedScriptUndo', GENERAL_SETTINGS)
+
+    # This forms the base layer:
+    App.Do(Environment, 'NewFile', {
+        'Width': image_size,
+        'Height': image_size,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'FillMaterial': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Transparent': True,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'GeneralSettings': SILENT})
+
+    # Select document for drawing vectors:
+    App.Do(Environment, 'SelectDocument', {
+        'SelectedImage': 0,
+        'Strict': False,
+        'GeneralSettings': SILENT})
+
+    x = center_x
+    y = center_y
+    ring_radius = .72 * PETAL_RADIUS + PETAL_RADIUS
+    draw_clover_ring(x, y, ring_radius, PETAL_RADIUS, ring_color)
+
+    member_radius = PETAL_RADIUS / 3
+    inner_ring_radius = .72 * member_radius + member_radius
+    angle = 0
+
+    for i in range(5):
+        color = (
+            (48, 51, 161),
+            (161, 48, 108),
+            (161, 158, 48),
+            (48, 161, 101),
+            (101, 101, 48))[i]
+
+        x, y = clover_center[i]
+        draw_clover(x, y, angle, inner_ring_radius, member_radius, color)
+        angle += DEGREE_72
+
+    draw_ring(RING_RADIUS - RING_WIDTH / 4, (center_x, center_y), ring_color, RING_WIDTH)
+    convert_vector()
