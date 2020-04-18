@@ -1,0 +1,541 @@
+from PSPApp import *
+import math
+
+
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+GENERAL_SETTINGS = {'GeneralSettings': SILENT}
+
+# degrees:
+DEGREE_2 = .0349066
+DEGREE_3 = .0523599
+DEGREE_30 = .523599
+DEGREE_45 = .785398
+DEGREE_60 = 1.0472
+DEGREE_90 = 1.5708
+DEGREE_120 = 2.0944
+DEGREE_180 = 3.14159
+DEGREE_240 = 4.18879
+DEGREE_300 = 5.23599
+
+# color:
+BLACK = 0, 0, 0
+WHITE = 255, 255, 255
+
+CIRCLE_SIZE = 900
+CIRCLE_RING_WIDTH = 50
+IMAGE_SIZE = CIRCLE_SIZE + CIRCLE_RING_WIDTH * 2
+RING_RADIUS = CIRCLE_SIZE / 12
+CENTER_Y = CENTER_X = IMAGE_SIZE / 2
+
+"""
+This script creates a Business Symbol that is black and white,
+colored (randomly or with preset).
+
+It is recommended that the symbol be saved with a
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+The script will run in the restricted mode.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'Charles Bartley',
+        'Copyright': u'GNU 3.0',
+        'Description': u'Draws a Business symbol.',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'15.00'}
+
+
+def clear_white_areas():
+    """
+    Clears white area from a layer.
+    Uses NonZero mask to remove the grey edge of a selection.
+    """
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'MaskFromImage', {
+        'CreateMaskFrom': App.Constants.CreateMaskFrom.Luminance,
+        'InvertMaskData': False,
+        'SourceImage': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectFromMask', {'GeneralSettings': SILENT})
+    App.Do(Environment, 'SelectLayer', {'Path': (1, 0, [], True)})
+    App.Do(Environment, 'DeleteLayer', {'Path': None, 'MergeMask': True, 'WorkingMode': 1})
+    App.Do(Environment, 'ClearSelection')
+    App.Do(Environment, 'SelectLayer', {'Path': (0, -1, [], True)})
+    make_white_layer()
+    App.Do(Environment, 'SelectLayer', {'Path': (0, 1, [], True)})
+    App.Do(Environment, 'LayerMergeDown')
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Hide, 'Path': None, 'WorkingMode': 1})
+    App.Do(Environment, 'SelectNone', {'Path': (0, 1, [], True)})
+
+
+def clear_busy_selection():
+    """ Clears 'busy' selection. """
+    App.Do(Environment, 'SelectLoadAlpha', {
+        'SourceImage': 0,
+        'AlphaIndex': 0,
+        'AlphaName': u'Backdrop Selection',
+        'SelectionOperation': App.Constants.SelectionOperation.Replace,
+        'UpperLeft': False,
+        'ClipToCanvas': False,
+        'Invert': False,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'ClearSelection')
+
+
+def clear_white_areas2():
+    """
+    Clears white area from a layer.
+    Uses NonZero mask to remove the grey edge of a selection.
+    """
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'MaskFromImage', {
+        'CreateMaskFrom': App.Constants.CreateMaskFrom.NonZero,
+        'InvertMaskData': False,
+        'SourceImage': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectFromMask', {'GeneralSettings': SILENT})
+    App.Do(Environment, 'SelectLayer', {'Path': (1, 0, [], True)})
+    App.Do(Environment, 'DeleteLayer', {'Path': None, 'MergeMask': True, 'WorkingMode': 1})
+    App.Do(Environment, 'ClearSelection')
+    App.Do(Environment, 'SelectLayer', {'Path': (0, -1, [], True)})
+    App.Do(Environment, 'SelectNone', {'Path': (0, 1, [], True)})
+
+
+def convert_vector():
+    """ Convert the vector layer to raster. """
+    App.Do(Environment, 'VectorSelectionUpdate', {
+        'Path': (1, 0, [], False),
+        'Type': App.Constants.ObjectSelection.Select,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'MultiLayerConvertToRaster', {
+        'Path': None,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def do_color_fill(color):
+    """
+    Fills a raster layer with a solid grey-type color.
+
+    color : integer
+        Is used by the three color components, RGB,
+        to define the fill color (color, color, color).
+    """
+    # Fill the layer with a solid color:
+    App.Do(Environment, 'Fill', {
+        'BlendMode': App.Constants.BlendMode.Normal,
+        'MatchMode': App.Constants.MatchMode.None,
+        'Material': {
+            'Color': (color, color, color),
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'UseForeground': True,
+        'Opacity': 100,
+        'Point': (.5, .5),
+        'SampleMerged': False,
+        'Tolerance': 200,
+    'GeneralSettings': {
+        'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def draw_1st_ring():
+    """ Draw inner ring. """
+    angle = 0
+
+    for i in range(6):
+        draw_hook(angle, (CENTER_X, CENTER_Y), RING_RADIUS, -1)
+        angle += DEGREE_60
+    merge_ring(5)
+
+
+def draw_2nd_ring():
+    """ Draws middle ring. """
+    angle = DEGREE_3
+
+    for i in range(6):
+        draw_hook(angle, (CENTER_X, CENTER_Y), RING_RADIUS * 3 - RING_RADIUS / 7, 1)
+        angle += DEGREE_60
+
+    merge_ring(5)
+    App.Do(Environment, 'NegativeImage')
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Show, 'Path': None, 'WorkingMode': 1})
+
+    clear_white_areas2()
+    App.Do(Environment, 'NegativeImage')
+    App.Do(Environment, 'SelectLayer', {'Path': (0, 1, [], True)})
+    App.Do(Environment, 'LayerMergeDown')
+
+
+def draw_3rd_ring():
+    """ Draws middle ring. """
+    angle = DEGREE_2
+    for i in range(6):
+        draw_hook(
+            angle,
+            (CENTER_X, CENTER_Y),
+            RING_RADIUS * 5 - RING_RADIUS / 7 - RING_RADIUS / 7, -1)
+        angle += DEGREE_60
+
+    merge_ring(5)
+    App.Do(Environment, 'NegativeImage')
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Show, 'Path': None, 'WorkingMode': 1})
+
+    clear_white_areas2()
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Show, 'Path': None, 'WorkingMode': 1})
+
+    App.Do(Environment, 'SelectLayer', {'Path': (0, 1, [], True)})
+    App.Do(Environment, 'LayerMergeDown')
+
+
+def draw_circle(radius, center, color):
+    """
+    Draws a vector circle.
+
+    radius : number
+        the radius of the circle
+
+    center : point
+        the center coordinate (x, y) point of the circle
+
+    line_color : color of the circle edge and fill color.
+
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': None,
+        'LineWidth': 0,
+        'Stroke': None,
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def draw_hook(angle, center, radius, direction):
+    """
+    Draws a hook.
+    
+    angle : float
+        angle from center to draw the hook
+        
+    center : the center where the hook rotates from
+        (x, y) integers
+        
+    radius : integer
+        radius of the hook circulation
+        
+    direction : integer (-1, 1)
+        -1 is clockwise
+        1 is clockwise
+    """
+    angle2 = angle + DEGREE_90 * direction
+    x, y = get_point_on_circle(center, angle, radius)
+
+    draw_circle(RING_RADIUS, (x, y), BLACK)
+
+    x, y = get_point_on_circle((x, y), angle2, RING_RADIUS / 2)
+
+    draw_circle(RING_RADIUS, (x, y), WHITE)
+    convert_vector()
+    clear_white_areas()
+
+
+def draw_ring(radius, center, color, width):
+    """
+    Draws a ring.
+
+    radius : integer
+        the radius of the ring
+
+    center : point
+        center of the ring
+
+    color : (r, g, b)
+        color of the ring
+
+    width : integer
+        the width of the ring
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': width,
+        'Stroke': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def get_point_on_circle(center, angle, radius):
+    """
+    Returns a point on the circle that corresponds to a rotation angle.
+
+    center : point of (x, y) integers
+        center of the circle
+
+    angle : float
+        the rotation angle
+
+    radius : float
+        the radius of the circle
+
+    Returns:
+        x : float
+        y : float
+        the point on the circle.
+    """
+    radius = float(radius)
+    x = (math.sin(angle) * radius) + center[0]
+    y = (math.cos(angle) * -radius) + center[1]
+    return x, y
+
+
+def make_white_layer():
+    """
+    Creates a new raster layer filled with white.
+
+    n : string
+        the name of the layer
+    """
+    new_layer('NewRasterLayer', 'white')
+    do_color_fill(255)
+
+
+def merge_ring(layer_count):
+    """
+    Merges the hook layers.
+
+    layer_count : integer
+        the layer count to merge
+    """
+    for i in range(layer_count):
+        App.Do(Environment, 'LayerSetVisibility', {
+            'Command': App.Constants.ShowCommands.Show, 'Path': None, 'WorkingMode': 1})
+
+        App.Do(
+            Environment,
+            'LayerProperties', {
+                'General': {'BlendMode': App.Constants.BlendMode.Difference},
+            'GeneralSettings': SILENT})
+        App.Do(Environment, 'LayerMergeDown')
+
+
+def new_layer(t, n):
+    """
+    Creates a new layer.
+
+    't' is the layer type.
+    'n' is the layer name.
+    """
+    b = 0, 0, 255, 255, 0, 0, 255, 255
+    App.Do(Environment, t, {
+        'BlendRanges': {
+            'BlendRangeGreen': b,
+            'BlendRangeRed': b,
+            'BlendRangeBlue': b,
+            'BlendRangeGrey': b},
+
+        'General': {
+            'UseHighlight': 0,
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'GroupLink': 0,
+            'IsVisible': 1,
+            'IsTransparencyLocked': 0,
+            'LinkSet': 0,
+            'Opacity': 100,
+            'Name': n},
+        'GeneralSettings': {
+            'ExecutionMode': App.Constants.ExecutionMode.Silent}})
+
+
+def promote_background():
+    """ Promote the background layer so that it can have transparency. """
+    App.Do(Environment, 'LayerPromoteBackground', {'GeneralSettings': SILENT})
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+
+    Environment = E
+    App.Do(Environment, 'EnableOptimizedScriptUndo', GENERAL_SETTINGS)
+
+    # This forms the base layer:
+    App.Do(Environment, 'NewFile', {
+        'Width': IMAGE_SIZE,
+        'Height': IMAGE_SIZE,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'FillMaterial': {
+            'Color': WHITE,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Transparent': False,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'GeneralSettings': SILENT})
+
+    # Select document for drawing vectors:
+    App.Do(Environment, 'SelectDocument', {
+        'SelectedImage': 0,
+        'Strict': False,
+        'GeneralSettings': SILENT})
+
+    promote_background()
+    draw_1st_ring()
+    draw_2nd_ring()
+    draw_3rd_ring()
+    draw_ring(IMAGE_SIZE / 2 - 55, (CENTER_X, CENTER_Y), BLACK, 30)
+    convert_vector()
+    App.Do(Environment, 'LayerMergeDown')
+    App.Do(Environment, 'LayerMergeDown')
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'MaskFromImage', {
+        'CreateMaskFrom': App.Constants.CreateMaskFrom.Luminance,
+        'InvertMaskData': False,
+        'SourceImage': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectFromMask', {'GeneralSettings': SILENT})
+    App.Do(Environment, 'SelectLayer', {'Path': (1, 0, [], True)})
+    App.Do(Environment, 'DeleteLayer', {'Path': None, 'MergeMask': True})
+    App.Do(Environment, 'SelectSaveAlpha', {
+        'SourceImage': 0,
+        'AlphaName': u'busy',
+        'Overwrite': False,
+        'UpperLeft': False,
+        'AlphaIndex': None,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectNone')
+    App.Do(Environment, 'Fill', {
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'MatchMode': App.Constants.MatchMode.None,
+            'Material': {
+                'Color': None,
+                'Pattern': None,
+                'Gradient': {
+                    'Name': u'Sun Arc',
+                    'GradientType': App.Constants.Gradient.Sunburst,
+                    'Angle': 0,
+                    'RepeatCount': 1,
+                    'RepeatType': App.Constants.RepeatType.Pad,
+                    'ColorStops': None,
+                    'TransparencyStops': [],
+                    'CenterPoint': (.5, .5),
+                    'FocalPoint': (.5, .5),
+                    'Invert': False},
+
+                'Texture': None,
+                'Art': None},
+
+            'UseForeground': True,
+            'Opacity': 100,
+            'Point': (500.5, 500.5),
+            'SampleMerged': False,
+            'Tolerance': 200,
+            'GeneralSettings': SILENT})
+
+    clear_busy_selection()
+    App.Do(Environment, 'SelectNone')
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(
+        Environment,
+        'LayerProperties', {
+            'General': {'BlendMode': App.Constants.BlendMode.Multiply},
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(
+        Environment,
+        'LayerProperties', {
+            'General': {'BlendMode': App.Constants.BlendMode.Burn},
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'GaussianBlur', {
+        'Radius': 20, 'GeneralSettings': SILENT})
+
+    App.Do(
+        Environment,
+        'LayerProperties', {
+            'General': {'BlendMode': App.Constants.BlendMode.HardLight},
+        'GeneralSettings': SILENT})
+
+    clear_busy_selection()
+    App.Do(Environment, 'SelectNone')
+    App.Do(Environment, 'ColorAdjustBrightnessContrast', {
+        'BrightnessContrast': {
+            'Brightness': -127,
+            'Contrast': -100,
+            'ContrastNew': 0,
+            'UseLinearBC': True},
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'LayerMergeVisible')
