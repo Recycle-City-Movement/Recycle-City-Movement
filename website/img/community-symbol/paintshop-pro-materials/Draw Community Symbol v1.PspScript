@@ -1,0 +1,487 @@
+from PSPApp import *
+import math
+
+SILENT = {'ExecutionMode': App.Constants.ExecutionMode.Default}
+BLACK = 0, 0, 0
+WHITE = 255, 255, 255
+IMAGE_SIZE = 1000
+DIAMETER_SIZE = IMAGE_SIZE * 2.4
+THIRD_RING_DIAMETER = DIAMETER_SIZE / 6
+FOURTH_RING_DIAMETER = DIAMETER_SIZE / 4
+FIFTH_RING_DIAMETER = DIAMETER_SIZE / 2
+SIXTH_RING_DIAMETER = DIAMETER_SIZE
+CENTER = IMAGE_SIZE / 2, IMAGE_SIZE / 2
+BIG_EYE_RADIUS = IMAGE_SIZE / 7.5
+BIG_EYE_OFFSET = BIG_EYE_RADIUS * 2.55
+BIG_EYE_PUPIL = BIG_EYE_RADIUS / 2
+SMALL_EYE_RADIUS = IMAGE_SIZE / 28
+SMALL_EYE_PUPIL = SMALL_EYE_RADIUS / 2
+SMALL_EYE_OFFSET = IMAGE_SIZE / 16.2
+IMAGE_RING_WIDTH = 25
+IMAGE_RING_COLOR = 205, 50, 150
+BIG_EYE_COLOR = 0, 187, 255
+SMALL_EYE_COLOR = 64, 187, 255
+STAR = u'star'
+DEGREE_45 = .785398
+DEGREE_90 = 1.5708
+RING_NAMES = (
+        u'ring1',
+        u'ring2'
+    )
+
+DIAMETERS = (
+        FOURTH_RING_DIAMETER,
+        SIXTH_RING_DIAMETER
+    )
+
+"""
+This script creates a Community Symbol that is black and white,
+colored (randomly or with preset).
+
+It is recommended that the symbol be saved with a
+a transparency enabled PNG type file.
+
+This script requires: Corel's PaintShop Pro v5+
+
+In order to run the script, place it in a PSP Script folder
+previously identified by File/Preferences/Program Locations.
+
+The script will run in the restricted mode.
+
+Run this script from the Toolbars/Script widget.
+"""
+
+
+def ScriptProperties():
+    return {
+        'Author': u'Charles Bartley',
+        'Copyright': u'GNU 3.0',
+        'Description': u'Draws a Community symbol.',
+        'Host': u'PaintShop Pro',
+        'Host Version': u'15.00'}
+
+
+def convert_vector():
+    """ Convert the vector layer to raster. """
+    App.Do(Environment, 'VectorSelectionUpdate', {
+        'Path': (1, 0, [], False),
+        'Type': App.Constants.ObjectSelection.Select,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'MultiLayerConvertToRaster', {
+        'Path': None,
+        'WorkingMode': 1,
+        'GeneralSettings': SILENT})
+
+
+def convert_vector_differ():
+    """
+    Convert the vector layer to raster and make it a difference layer.
+    LINES type layers remain normal layers.
+    """
+    convert_vector()
+    App.Do(
+        Environment,
+        'LayerProperties', {
+            'General': {'BlendMode': App.Constants.BlendMode.Difference},
+        'GeneralSettings': SILENT})
+
+
+def do_color_fill(color):
+    """
+    Fills a raster layer with a solid grey-type color.
+
+    color : integer
+        Is used by the three color components, RGB,
+        to define the fill color (color, color, color).
+    """
+    App.Do(Environment, 'Fill', {
+        'BlendMode': App.Constants.BlendMode.Normal,
+        'MatchMode': App.Constants.MatchMode.None,
+        'Material': {
+            'Color': (color, color, color),
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'UseForeground': True,
+        'Opacity': 100,
+        'Point': (.5, .5),
+        'SampleMerged': False,
+        'Tolerance': 200,
+    'GeneralSettings': SILENT})
+
+
+def draw_circle(radius, center, color):
+    """
+    Draws a vector circle.
+
+    radius : number
+        the radius of the circle
+
+    center : point
+        the center coordinate (x, y) point of the circle
+
+    line_color : color of the circle edge and fill color.
+
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': None,
+        'LineWidth': 0,
+        'Stroke': None,
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def draw_ring(radius, center, color, width):
+    """
+    Draws a ring.
+
+    radius : integer
+        the radius of the ring
+
+    center : point
+        center of the ring
+
+    color : (r, g, b)
+        color of the ring
+
+    width : integer
+        the width of the ring
+    """
+    App.Do(Environment, 'CreateEllipseObject', {
+        'Antialias': True,
+        'MiterLimit': 15,
+        'Join': App.Constants.JointStyle.Miter,
+        'CreateAsVector': True,
+        'Fill': {
+            'Color': None,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'LineStyle': {
+            'Name': u'',
+            'FirstCap': (u'Butt', 7.21, 7.21),
+            'LastCap': (u'Butt', 1, 1),
+            'FirstSegCap': None,
+            'LastSegCap': None,
+            'UseSegmentCaps': False,
+            'Segments': None},
+
+        'LineWidth': width,
+        'Stroke': {
+            'Color': color,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'ObjectName': 'Rotation',
+        'RadiusX': radius - .5,
+        'RadiusY': radius - .5,
+        'CenterX': center[0],
+        'CenterY': center[1],
+        'Matrix': None,
+        'Visibility': True,
+        'GeneralSettings': SILENT})
+
+
+def get_point_on_circle(center, angle, radius):
+    """
+    Returns a point on the circle that corresponds to a rotation angle.
+
+    center : point of (x, y) integers
+        center of the circle
+
+    angle : float
+        the rotation angle
+
+    radius : float
+        the radius of the circle
+
+    Returns:
+        x : float
+        y : float
+        the point on the circle.
+    """
+    radius = float(radius)
+    x = (math.sin(angle) * radius) + center[0]
+    y = (math.cos(angle) * -radius) + center[1]
+    return x, y
+
+
+def make_white_layer(n):
+    """
+    Creates a new raster layer filled with white.
+
+    n : string
+        the name of the layer
+    """
+    new_layer('NewRasterLayer', n)
+    do_color_fill(255)
+
+
+def new_layer(t, n):
+    """ 't' is the layer type. 'n' is the layer name. """
+    b = 0, 0, 255, 255, 0, 0, 255, 255
+    App.Do(Environment, t, {
+        'BlendRanges': {
+            'BlendRangeGreen': b,
+            'BlendRangeRed': b,
+            'BlendRangeBlue': b,
+            'BlendRangeGrey': b},
+
+        'General': {
+            'UseHighlight': 0,
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'GroupLink': 0,
+            'IsVisible': 1,
+            'IsTransparencyLocked': 0,
+            'LinkSet': 0,
+            'Opacity': 100,
+            'Name': n},
+        'GeneralSettings': SILENT})
+
+
+def promote_background():
+    """ Promote the background layer so that it can have transparency. """
+    App.Do(Environment, 'LayerPromoteBackground', {'GeneralSettings': SILENT})
+
+
+def save_image_selection(name):
+    """
+    Clears white area from a layer.
+    Uses NonZero mask to remove the grey edge of a selection.
+    """
+    App.Do(Environment, 'LayerMergeToNewLayer')
+    App.Do(Environment, 'MaskFromImage', {
+        'CreateMaskFrom': App.Constants.CreateMaskFrom.NonZero,
+        'InvertMaskData': False,
+        'SourceImage': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'SelectFromMask', {'GeneralSettings': SILENT})
+    App.Do(Environment, 'SelectLayer', {'Path': (1, 0, [], True)})
+    App.Do(Environment, 'DeleteLayer', {'Path': None, 'MergeMask': True})
+    App.Do(Environment, 'SelectSaveAlpha', {
+        'SourceImage': 0,
+        'AlphaName': name,
+        'Overwrite': False,
+        'UpperLeft': False,
+        'AlphaIndex': None,
+        'GeneralSettings': SILENT})
+    App.Do(Environment, 'SelectNone')
+
+def use_selection(name):
+    """
+    Loads a selection and clears its influence.
+    
+    name : string
+        name of the selection
+    """
+    App.Do(Environment, 'SelectLoadAlpha', {
+        'SourceImage': 0,
+        'AlphaName': name,
+        'AlphaIndex': None,
+        'SelectionOperation': App.Constants.SelectionOperation.Replace,
+        'UpperLeft': False,
+        'ClipToCanvas': False,
+        'Invert': False,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'ClearSelection')
+    App.Do(Environment, 'SelectNone')
+
+
+def Do(E):
+    """ This is the start of the script. """
+    global Environment
+
+    Environment = E
+
+    # This forms the base layer:
+    App.Do(Environment, 'NewFile', {
+        'Width': IMAGE_SIZE,
+        'Height': IMAGE_SIZE,
+        'ColorDepth': App.Constants.Colordepth.SixteenMillionColor,
+        'DimensionUnits': App.Constants.DimensionType.Pixels,
+        'ResolutionUnits': App.Constants.ResolutionUnits.PixelsPerIn,
+        'Resolution': 200,
+        'FillMaterial': {
+            'Color': WHITE,
+            'Pattern': None,
+            'Gradient': None,
+            'Texture': None,
+            'Art': None},
+
+        'Transparent': False,
+        'LayerType': App.Constants.NewLayerType.Raster,
+        'GeneralSettings': SILENT})
+
+    # Select document for drawing vectors:
+    App.Do(Environment, 'SelectDocument', {
+        'SelectedImage': 0,
+        'Strict': False,
+        'GeneralSettings': SILENT})
+
+    promote_background()
+
+    # Draw fractal star:
+    for ring, d in enumerate(DIAMETERS):
+        make_white_layer('white layer')
+        diameter = d / 2.414
+        unused_space = d - diameter * 2
+        radius = diameter / 2 + unused_space / 2
+        angle = DEGREE_45
+        name = RING_NAMES[ring]
+
+        draw_circle(diameter / 2, CENTER, WHITE)
+        convert_vector_differ()
+        save_image_selection(name)
+
+        for i in range(4):
+            x, y = get_point_on_circle(CENTER, angle, radius)
+
+            draw_circle(diameter / 2, (x, y), WHITE)
+            angle += DEGREE_90
+
+        convert_vector_differ()
+        App.Do(Environment, 'LayerMergeVisible')
+        use_selection(name)
+        App.Do(Environment, 'LayerSetVisibility', {
+            'Command': App.Constants.ShowCommands.Hide,
+            'Path': None,
+            'WorkingMode': 0,
+            'GeneralSettings': SILENT})
+
+        App.Do(Environment, 'LayerProperties', {
+            'General': {
+                'BlendMode': App.Constants.BlendMode.Difference},
+            'GeneralSettings': SILENT})
+
+        if ring:
+            a = 45 * ring
+            App.Do( Environment, 'Rotate', {
+                'RotAngleDegrees': a,
+                'Direction': False,
+                'Rotate All Layers': False,
+                'FillMaterial': None,
+                'Rotate single layer around canvas center': True,
+                'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Show,
+        'Path': None,
+        'WorkingMode': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'LayerSetVisibility', {
+        'Command': App.Constants.ShowCommands.Show,
+        'Path': (0, -1, [], False),
+        'WorkingMode': 0,
+        'GeneralSettings': SILENT})
+
+    App.Do(Environment, 'LayerMergeVisible')
+    App.Do(Environment, 'LayerDuplicate')
+    App.Do(Environment, 'SelectLayer', {'Path': (0, -1, [], True)})
+    make_white_layer("mid")
+    App.Do(Environment, 'LayerMergeVisible')
+    App.Do(Environment, 'LayerDuplicate')
+    save_image_selection(STAR)
+    App.Do(Environment, 'LayerMergeDown')
+    App.Do(Environment, 'Fill', {
+            'BlendMode': App.Constants.BlendMode.Normal,
+            'MatchMode': App.Constants.MatchMode.None,
+            'Material': {
+                'Color': None,
+                'Pattern': None,
+                'Gradient': {
+                    'Name': u'Heart1b',
+                    'GradientType': App.Constants.Gradient.Rectangular,
+                    'Angle': 0,
+                    'RepeatCount': 1,
+                    'RepeatType': App.Constants.RepeatType.Pad,
+                    'ColorStops': None,
+                    'TransparencyStops': [],
+                    'CenterPoint': (.5, .5),
+                    'FocalPoint': (.5, .5),
+                    'Invert': False},
+
+                'Texture': None,
+                'Art': None},
+
+            'UseForeground': True,
+            'Opacity': 100,
+            'Point': (500.5, 500.5),
+            'SampleMerged': False,
+            'Tolerance': 200,
+            'GeneralSettings': SILENT})
+
+    use_selection(STAR)
+
+    # image ring:
+    draw_ring(
+        IMAGE_SIZE / 2 - IMAGE_RING_WIDTH / 2 - 1,
+        CENTER,
+        IMAGE_RING_COLOR,
+        IMAGE_RING_WIDTH)
+
+    convert_vector()
+    App.Do(Environment, 'LayerMergeVisible')
+
+    # big eyes:
+    for i in range(4):
+        center = (
+            (CENTER[0], CENTER[1] - BIG_EYE_OFFSET),
+            (CENTER[0], CENTER[1] + BIG_EYE_OFFSET),
+            (CENTER[0] - BIG_EYE_OFFSET, CENTER[1]),
+            (CENTER[0] + BIG_EYE_OFFSET, CENTER[1])
+        )[i]
+
+        draw_ring(
+                BIG_EYE_RADIUS - BIG_EYE_PUPIL / 2,
+                center,
+                BIG_EYE_COLOR,
+                BIG_EYE_PUPIL
+            )
+
+    convert_vector()
+    App.Do(Environment, 'LayerMergeVisible')
+
+    # small eyes:
+    for i in range(4):
+        center = (
+            (CENTER[0] - SMALL_EYE_OFFSET, CENTER[1] - SMALL_EYE_OFFSET),
+            (CENTER[0] - SMALL_EYE_OFFSET, CENTER[1] + SMALL_EYE_OFFSET),
+            (CENTER[0] + SMALL_EYE_OFFSET, CENTER[1] - SMALL_EYE_OFFSET),
+            (CENTER[0] + SMALL_EYE_OFFSET, CENTER[1] + SMALL_EYE_OFFSET)
+        )[i]
+
+        draw_ring(
+                SMALL_EYE_RADIUS - SMALL_EYE_PUPIL / 2,
+                center,
+                SMALL_EYE_COLOR,
+                SMALL_EYE_PUPIL
+            )
+
+    convert_vector()
+    App.Do(Environment, 'LayerMergeVisible')
