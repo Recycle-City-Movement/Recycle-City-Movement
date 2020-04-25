@@ -4,6 +4,27 @@
     <title>RCM Log-in For New Members</title>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="../css/styles.css" />
+    <style>
+      table {
+        font-size: smaller;
+      }
+
+      th   {
+        padding: 20px 0 0 20px;
+        text-align: left;
+      }
+
+      input, select {
+        box-shadow: 0px 0px 4px #aaaaaa;
+        background-color: #ddffff;
+        border: 0px;
+      }
+
+      select > option {
+        background: #ddffff;
+        box-shadow: 0px 0px 8px #aaaaaa;
+      }
+    </style>
   </head>
   <body class="text-shadow">
     <div>
@@ -12,8 +33,35 @@
         src="../img/sign-in-symbol/sign-in-symbol.png"
         alt="Formation"
       />
-    </div>  
+    </div>
     <h3>Log-in</h3>
-    <p>Existing members will have a sign-in form here.</p>
+  </br></br>
+    <p>Existing
+      <abbr title="Recycle City Movement">RCM</abbr>
+      members sign-in
+      here.
+    </p>
+    <form>
+      <table>
+        <tr>
+          <th>
+            <label for="alias">Alias:</label></br>
+            <input type="text" id="alias" name="alias" style="width: 300px"></br>
+          </th>
+          <th>
+            <label for="email">E-Mail Address:</label></br>
+            <input type="text" id="email" name="email" style="width: 300px"></br>
+          </th>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <th>
+            <input type="submit" value="Log-in"
+            style="width: 100px; height: 20px; background: #ccccee; border: 1px solid#222222;">
+          </th>
+        </tr>
+      </table>
+    </form>
   </body>
 </html>
