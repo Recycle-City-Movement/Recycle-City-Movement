@@ -37,7 +37,7 @@ Everyone is needed to share the call for RCM volunteers.
 **About me:**</b>
 I first conceived of the Recycle City Movement (RCM), on March 18th, 2020, while meditating in bed. Once the idea had sprung, my heart must have activated, as I jumped from my bed, and started writing the idea down. I was over-whelmed with joy. I knew it was an epiphany. Ever since that moment I have been filled with passion to see RCM realized.</b>
 
-Yes, RCM is my baby. I would see it grow, as a child does, with the care of others. So, it is is my hope that you would adopt RCM as your own, by volunteering to help, as there is much to be done.</b>
+Yes, RCM is a seed. I would see it grow, as any life form does, with the care of others. So, it is is my hope that you would adopt RCM as your own, by volunteering to help, as there is much to be done.</b>
 
 *Charles Bartley*</b>
 *4/2/2020*
