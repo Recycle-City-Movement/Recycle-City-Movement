@@ -18,7 +18,7 @@ The recycling paradigm is inspired by reality. The eternal flow of energy, creat
 
 I recommend downloading the website repository and perusing the website from the 'index.html' page. If your willing to study, you will find that the welcome page has links to the RCM charter and business plan, and the community page has links to the community charter and community business plan.
 
-I am working on website everyday. So, you may also want to come back later and check it out.
+Make the movement your own if you like. It is a just an idea and is meant to be shared. If you want to work on the website, any help on this repository would create a unifying field.
 
 **How To Be A RCM Volunteer?**</b>
 
