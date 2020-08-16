@@ -1,4 +1,4 @@
-**Greetings!**</b>
+![Recycle City Movement](RCM.png) **Greetings!**</b>
 
 So here is something to do that is worthy of your time while here are on Earth. What is that? Create a system of service-to-others.
 
