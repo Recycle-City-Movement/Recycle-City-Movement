@@ -41,3 +41,19 @@ Yes, RCM is a seed. I would see it grow, as any life form does, with the care of
 
 *Charles Bartley*</b>
 *4/2/2020*
+
+**Prayer to the 5D and the Galactics**
+To my dear friends in the 5D.
+
+We invite you to come and visit us here on our shared land.
+
+We honor, we love, and we respect you.
+
+For the greatest good are hearts go out to you.
+
+We look forward to the day where we can communicate openly with you without fear.
+
+We are one.
+
+*Charles Bartley*</b>
+*2/14/2021*
